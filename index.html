@@ -101,6 +101,15 @@ table.splits td{padding:8px 0;border-top:.5px solid var(--sep);font-family:var(-
 .update img{width:30px;height:auto;flex:none}
 .update .go{background:var(--blue);color:#fff;font-weight:600;font-size:15px;padding:7px 14px;border-radius:999px;flex:none}
 .update .x{color:var(--label3);font-size:20px;line-height:1;padding:0 2px}
+.chart text.wm{font-size:13px;font-weight:600;fill:rgba(235,235,245,.85)}
+.chart text.wm2{font-size:11px;fill:rgba(235,235,245,.45)}
+.chart text.wl{font-size:15px;font-weight:700;fill:#000;font-family:var(--round)}
+.wcal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px 2px}
+.wday{display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 0;border-radius:10px;font-size:13px;font-family:var(--round);font-weight:600}
+.wday.on{background:var(--card2)}
+.wday i{width:28px;height:28px;border-radius:50%;border:3.5px solid #12324d;display:block}
+.wday:disabled{opacity:.3}
+.btn:disabled{opacity:.35}
 .ver{font-family:var(--round);font-size:11px;font-weight:600;color:#48484a;letter-spacing:.02em;padding:2px 0}
 .info{display:inline-grid;place-items:center;width:22px;height:22px;color:var(--blue);vertical-align:middle;margin-left:6px;flex:none}
 .info svg{width:20px;height:20px}
@@ -145,12 +154,13 @@ h2 .info{margin-left:8px}
    Biom: a personal health and training dashboard.
    All data lives on this device (IndexedDB). Nothing is sent anywhere.
    ============================================================ */
-const APP_VERSION = "1.3.0";
+const APP_VERSION = "1.4.0";
 /* Versions: MAJOR.MINOR.PATCH
    MAJOR = big redesign or a change in how data is stored (may need a re-import)
    MINOR = new screens or features
    PATCH = fixes and small visual tweaks */
 const CHANGELOG = [
+  {v:"1.4.0", d:"8 Nov 2026", items:["Hydration: drag the water line on your bottle as you drink. Each drop is logged with its time.","New Bottle and Undo, a calendar of every day's water, and the minerals your water gives you.","Hydration on Summary and Health, and in Highlights once there's enough data."]},
   {v:"1.3.0", d:"8 Nov 2026", items:["Profile name at the top of Settings. Tap Edit to change it.","Simpler Settings: Profile and Data sections removed."]},
   {v:"1.2.2", d:"8 Nov 2026", items:["Check for Updates in Settings › Software Update and in What's New.","Reload Biom from Settings if a screen looks out of date."]},
   {v:"1.2.1", d:"8 Nov 2026", items:["Clearer Gym screen when no sets are in Biom yet, with a button to import your Watch gym log."]},
@@ -274,6 +284,7 @@ function importJSON(obj, label){
   if (!obj || typeof obj !== "object") throw new Error("Unrecognised file");
   let nd = 0, nw = 0, ns = 0;
   if (obj.profile) for (const [k,v] of Object.entries(obj.profile)) if (v!=null && (S.profile[k]==null || obj.kind!=="baseline" || k==="weightKg")) S.profile[k] = v;
+  if (obj.kind === "backup" && obj.water) { const w = W(); Object.assign(w.events, obj.water.events || {}); if (obj.water.cur && !w.cur) w.cur = obj.water.cur; if (obj.water.bottleMl) w.bottleMl = obj.water.bottleMl; if (obj.water.goalBase) w.goalBase = obj.water.goalBase; }
   if (obj.kind === "backup") { if (obj.settings) S.settings = Object.assign({}, obj.settings, S.settings); if (obj.deletedSets) Object.assign(S.deletedSets, obj.deletedSets); }
   if (obj.days) for (const [k, d] of Object.entries(obj.days)) { mergeDay(k, d); nd++; }
   if (obj.workouts) for (const w of (Array.isArray(obj.workouts) ? obj.workouts : Object.values(obj.workouts))) nw += mergeWorkout(Object.assign({}, w));
@@ -478,6 +489,7 @@ const IC = {
   info:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 11v6" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor" stroke="none"/></svg>`,
   moon:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 15.3A8.5 8.5 0 0 1 8.7 4a8.5 8.5 0 1 0 11.3 11.3z"/></svg>`,
   heart:`<svg viewBox="0 0 28 28" fill="currentColor"><path d="M14 24.5S3 17.8 3 10.4C3 7 5.6 4.5 8.7 4.5c2.2 0 4.1 1.2 5.3 3 1.2-1.8 3.1-3 5.3-3 3.1 0 5.7 2.5 5.7 5.9 0 7.4-11 14.1-11 14.1z"/></svg>`,
+  drop:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5S5 10.2 5 14.6A7 7 0 0 0 19 14.6C19 10.2 12 2.5 12 2.5z"/></svg>`,
   sync:`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.3L3 16M3 12a9 9 0 0 1 15.5-6.3L21 8M21 3v5h-5M3 21v-5h5"/></svg>`,
   walk:`<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="13.5" cy="3.5" r="2"/><path d="M10 8l3-1c.8-.2 1.5.2 1.8.9l1.4 3.2 2.6 1.1-.7 1.6-3.2-1.3-.6-1.4-1 3.3 2.3 2.4V22h-1.8v-4.6L11.6 15l-1.2 3.8L7 22l-1.3-1.3 3-3 2.2-7.3-1.4.5-1.3 2.9-1.6-.8L8.4 9z"/></svg>`,
   run:`<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="15" cy="3.5" r="2"/><path d="M9.6 7.8l3.6-1.3c.7-.2 1.4 0 1.8.6l1.8 2.9 2.9 1.2-.7 1.6-3.4-1.4-.9-1.4-1.2 3.6 2.6 2.4v5.8h-1.8v-5l-3.1-2.5-1.3 3.8-5 2.9-.9-1.6 4.3-2.5 2.4-7.4-1.5.5-1.6 3-1.6-.8 2-3.9z"/></svg>`,
@@ -550,6 +562,8 @@ const RANGE_INFO = {
 };
 const INFO = {
   whatsnew:{t:"What's New", b:`<button class="btn" style="margin:4px 0 10px;color:var(--blue)" onclick="checkUpdate(true)">Check for Updates</button>${CHANGELOG.map((c,i) => `<p style="margin-top:${i?18:6}px"><b style="color:#fff;font-size:17px">Version ${c.v}</b>${i===0?' <span class="pill" style="margin-left:6px;color:#30d158;background:#30d15822">Current</span>':""}<br><span style="color:var(--label2);font-size:13px">${c.d}</span></p><ul style="margin:6px 0 0;padding-left:20px">${c.items.map(x=>`<li style="margin:4px 0">${x}</li>`).join("")}</ul>`).join("")}<p style="margin-top:22px;color:var(--label2);font-size:13px">Numbering: the first number changes for a big redesign, the second for new features, the third for fixes and small tweaks.</p>`},
+  water:{t:"Hydration", b:`<p><b>Log a drink:</b> drag the white line down to where the water is in your bottle now. Biom logs the difference as one drink, with the time.</p><p><b>The markers follow your bottle's real shape.</b> The shoulder holds less water than the straight part, so 75% sits a little lower than three quarters of the height.</p><p><b>New Bottle</b> starts a full one. Whatever was left in the previous bottle isn't counted. <b>Undo</b> removes your last drink.</p><p><b>Daily goal:</b> about 2 L from drinks, plus 0.5 L for each hour of exercise that day. This follows the European Food Safety Authority's reference of 2.5 L of total water a day for men, about a fifth of which comes from food. Drink more in heat and on long runs.</p>`},
+  minerals:{t:"Minerals in Your Water", b:`<p>Your water contains, per litre: bicarbonate 255.4 mg, sulfate 35.2 mg, chloride 17.3 mg, calcium 61.6 mg, magnesium 18 mg, sodium 27.6 mg and potassium 2.6 mg. Biom multiplies these by what you drank.</p><p>Bars show the share of the EU daily reference intake: calcium 800 mg, magnesium 375 mg, potassium 2,000 mg, chloride 800 mg.</p><p><b>For running:</b> sweat loses roughly 0.5–1 g of sodium per litre, while this water gives under 30 mg per litre. On long or hot runs, salt has to come from food or a sports drink, not from water.</p><p>General information, not medical advice.</p>`},
   ranges:{t:"Chart Ranges", b:`<dl>${Object.entries(RANGE_INFO).map(([k,v])=>`<dt>${k} · ${v.n}</dt><dd>${v.d}</dd>`).join("")}</dl><p>The dashed white line is the average for the whole period. Tap any bar to see its exact value.</p>`},
   rings:{t:"Activity Rings", b:`<dl><dt style="color:var(--move)">Move</dt><dd>Active calories burned by moving.</dd><dt style="color:var(--exercise)">Exercise</dt><dd>Minutes of activity at the level of a brisk walk or more.</dd><dt style="color:var(--stand)">Stand</dt><dd>Hours in which you stood and moved for at least one minute.</dd></dl><p>Goals come from your Apple Watch. The small rings show your last 7 days.</p>`},
   vitals:{t:"Overnight Vitals", b:`<p>Compares last night's resting heart rate, heart rate variability, breathing rate and sleep with <b>your own typical range</b>: the grey band, based on your previous 4 weeks. The dot is last night's value.</p><p>One value outside its range is common and rarely meaningful. Several at once can mean your body is under strain: illness starting, stress, alcohol, a late meal or a hard training day.</p><p>Biom needs 7 nights of data before it can set a typical range. This is not a medical device.</p>`},
@@ -647,6 +661,11 @@ function highlights(){
   if (g.length >= 4 && s.length >= 4) { const A = avg(g), B = avg(s);
     H.push({dots:[WK, HR], cat:"Workouts · Recovery", text:`Your HRV the morning after a workout is ${A < B ? "lower" : "higher"} than after a rest day.`,
       bars:[{l:"After workout days", v:A, u:"ms", c:HR}, {l:"After rest days", v:B, u:"ms", c:"#636366"}]}); }
+  // water -> next-morning HRV (only days with water logged)
+  [g, s] = split(days90, k => waterMl(k) ? metricVal("hrv", addDays(k, 1)) : null, k => waterMl(k) >= 2000);
+  if (g.length >= 4 && s.length >= 4) { const A = avg(g), B = avg(s);
+    H.push({dots:[WATER_C, HR], cat:"Hydration · Recovery", text:`Your HRV the next morning is ${A > B ? "higher" : "lower"} after days you drink 2 L or more.`,
+      bars:[{l:"After 2 L+ days", v:A, u:"ms", c:HR}, {l:"After drier days", v:B, u:"ms", c:"#636366"}]}); }
   // steps this week vs last week
   const w1 = series("steps", 7), w0 = series("steps", 7, addDays(t, -7));
   if (w1.filter(x=>x.v!=null).length >= 4 && w0.filter(x=>x.v!=null).length >= 4) { const A = avg(w1.map(x=>x.v)), B = avg(w0.map(x=>x.v));
@@ -694,18 +713,123 @@ function contextSection(w){
   return `<h2><span class="h2l">In Context${infoBtn("context")}</span></h2><div class="card">${items.join("")}</div>`;
 }
 
+
+/* ============================================================ hydration */
+const BOTTLE_D = "M48.2 0 L87.8 0 C88.3 1.3 90.5 5.3 91.1 8.0 C91.8 10.7 91.9 13.3 91.7 16.0 C91.6 18.7 90.5 21.3 90.3 24.0 C90.1 26.7 89.8 29.3 90.6 32.0 C91.3 34.7 93.2 37.3 94.9 40.0 C96.7 42.7 99.0 45.3 101.0 48.0 C103.0 50.7 104.9 53.3 106.8 56.0 C108.6 58.7 110.4 61.3 112.2 64.0 C113.9 66.7 115.7 69.3 117.4 72.0 C119.0 74.7 120.6 77.3 122.1 80.0 C123.6 82.7 125.1 85.3 126.4 88.0 C127.7 90.7 128.9 93.3 130.0 96.0 C131.1 98.7 132.1 101.3 132.8 104.0 C133.6 106.7 134.2 109.3 134.4 112.0 C134.6 114.7 134.3 117.3 134.2 120.0 C134.2 122.7 134.0 125.3 134.0 128.0 C134.0 130.7 134.0 133.3 134.0 136.0 C134.0 138.7 134.0 141.3 134.0 144.0 C134.0 146.7 133.9 149.3 133.8 152.0 C133.8 154.7 133.6 157.3 133.6 160.0 C133.5 162.7 133.4 165.3 133.5 168.0 C133.6 170.7 133.8 173.3 133.9 176.0 C133.9 178.7 134.0 181.3 133.8 184.0 C133.7 186.7 133.3 189.3 133.1 192.0 C133.0 194.7 133.1 197.3 132.9 200.0 C132.8 202.7 132.7 205.3 132.2 208.0 C131.6 210.7 130.8 213.3 129.7 216.0 C128.5 218.7 126.8 221.3 125.4 224.0 C124.1 226.7 122.4 229.3 121.4 232.0 C120.4 234.7 119.7 237.3 119.2 240.0 C118.7 242.7 118.2 245.3 118.3 248.0 C118.4 250.7 118.9 253.3 119.8 256.0 C120.7 258.7 122.4 261.3 123.7 264.0 C125.0 266.7 126.4 269.3 127.5 272.0 C128.6 274.7 129.6 277.3 130.3 280.0 C131.0 282.7 131.4 285.3 131.7 288.0 C132.0 290.7 132.0 293.3 132.0 296.0 C132.0 298.7 132.0 301.3 131.9 304.0 C131.9 306.7 131.8 309.3 131.7 312.0 C131.7 314.7 131.7 317.3 131.7 320.0 C131.6 322.7 131.6 325.3 131.6 328.0 C131.5 330.7 131.6 333.3 131.6 336.0 C131.6 338.7 131.6 341.3 131.6 344.0 C131.6 346.7 131.5 349.3 131.5 352.0 C131.5 354.7 131.5 357.3 131.5 360.0 C131.5 362.7 131.5 365.3 131.5 368.0 C131.5 370.7 131.5 373.3 131.5 376.0 C131.5 378.7 131.5 381.3 131.5 384.0 C131.5 386.7 131.5 389.3 131.5 392.0 C131.5 394.7 131.5 397.3 131.5 400.0 C131.5 402.7 131.5 405.3 131.5 408.0 C131.5 410.7 131.5 413.3 131.5 416.0 C131.5 418.7 131.5 421.3 131.5 424.0 C131.5 426.7 131.5 429.3 131.5 432.0 C131.5 434.7 131.5 437.3 131.5 440.0 C131.5 442.7 131.5 445.3 131.3 448.0 C131.1 450.7 130.8 453.3 130.4 456.0 C129.9 458.7 129.5 461.3 128.6 464.0 C127.7 466.7 127.7 469.3 124.9 472.0 C122.1 474.7 118.0 477.3 111.8 480.0 C105.6 482.7 91.8 486.7 87.8 488.0 C83.8 489.3 87.8 488.0 87.8 488.0 Q68.0 496.0 48.2 488.0 C48.2 488.0 52.2 489.3 48.2 488.0 C44.2 486.7 30.4 482.7 24.2 480.0 C18.0 477.3 13.9 474.7 11.1 472.0 C8.3 469.3 8.3 466.7 7.4 464.0 C6.5 461.3 6.1 458.7 5.6 456.0 C5.2 453.3 4.9 450.7 4.7 448.0 C4.5 445.3 4.5 442.7 4.5 440.0 C4.5 437.3 4.5 434.7 4.5 432.0 C4.5 429.3 4.5 426.7 4.5 424.0 C4.5 421.3 4.5 418.7 4.5 416.0 C4.5 413.3 4.5 410.7 4.5 408.0 C4.5 405.3 4.5 402.7 4.5 400.0 C4.5 397.3 4.5 394.7 4.5 392.0 C4.5 389.3 4.5 386.7 4.5 384.0 C4.5 381.3 4.5 378.7 4.5 376.0 C4.5 373.3 4.5 370.7 4.5 368.0 C4.5 365.3 4.5 362.7 4.5 360.0 C4.5 357.3 4.5 354.7 4.5 352.0 C4.5 349.3 4.4 346.7 4.4 344.0 C4.4 341.3 4.4 338.7 4.4 336.0 C4.4 333.3 4.5 330.7 4.4 328.0 C4.4 325.3 4.4 322.7 4.3 320.0 C4.3 317.3 4.3 314.7 4.3 312.0 C4.2 309.3 4.1 306.7 4.1 304.0 C4.0 301.3 4.0 298.7 4.0 296.0 C4.0 293.3 4.0 290.7 4.3 288.0 C4.6 285.3 5.0 282.7 5.7 280.0 C6.4 277.3 7.4 274.7 8.5 272.0 C9.6 269.3 11.0 266.7 12.3 264.0 C13.6 261.3 15.3 258.7 16.2 256.0 C17.1 253.3 17.6 250.7 17.7 248.0 C17.8 245.3 17.3 242.7 16.8 240.0 C16.3 237.3 15.6 234.7 14.6 232.0 C13.6 229.3 11.9 226.7 10.6 224.0 C9.2 221.3 7.5 218.7 6.3 216.0 C5.2 213.3 4.4 210.7 3.8 208.0 C3.3 205.3 3.2 202.7 3.1 200.0 C2.9 197.3 3.0 194.7 2.9 192.0 C2.7 189.3 2.3 186.7 2.2 184.0 C2.0 181.3 2.1 178.7 2.1 176.0 C2.2 173.3 2.4 170.7 2.5 168.0 C2.6 165.3 2.5 162.7 2.4 160.0 C2.4 157.3 2.2 154.7 2.2 152.0 C2.1 149.3 2.0 146.7 2.0 144.0 C2.0 141.3 2.0 138.7 2.0 136.0 C2.0 133.3 2.0 130.7 2.0 128.0 C2.0 125.3 1.8 122.7 1.8 120.0 C1.7 117.3 1.4 114.7 1.6 112.0 C1.8 109.3 2.4 106.7 3.2 104.0 C3.9 101.3 4.9 98.7 6.0 96.0 C7.1 93.3 8.3 90.7 9.6 88.0 C10.9 85.3 12.4 82.7 13.9 80.0 C15.4 77.3 17.0 74.7 18.6 72.0 C20.3 69.3 22.1 66.7 23.8 64.0 C25.6 61.3 27.4 58.7 29.2 56.0 C31.1 53.3 33.0 50.7 35.0 48.0 C37.0 45.3 39.3 42.7 41.1 40.0 C42.8 37.3 44.7 34.7 45.4 32.0 C46.2 29.3 45.9 26.7 45.7 24.0 C45.5 21.3 44.4 18.7 44.3 16.0 C44.1 13.3 44.2 10.7 44.9 8.0 C45.5 5.3 47.7 1.3 48.2 0.0 Z";
+const BOTTLE_HW = [19.8, 21.7, 23.1, 23.9, 23.7, 23.2, 22.3, 22.0, 22.6, 24.3, 26.9, 29.9, 33.0, 35.9, 38.8, 41.5, 44.2, 46.8, 49.4, 51.8, 54.1, 56.3, 58.4, 60.3, 62.0, 63.6, 64.8, 65.9, 66.4, 66.4, 66.2, 66.1, 66.0, 66.0, 66.0, 66.0, 66.0, 65.9, 65.8, 65.7, 65.6, 65.5, 65.5, 65.7, 65.9, 66.1, 65.8, 65.4, 65.1, 65.0, 64.9, 64.7, 64.2, 63.2, 61.7, 59.7, 57.4, 55.2, 53.4, 52.1, 51.2, 50.6, 50.3, 50.6, 51.8, 53.6, 55.7, 57.7, 59.5, 61.0, 62.3, 63.2, 63.7, 63.9, 64.0, 64.0, 63.9, 63.8, 63.7, 63.7, 63.7, 63.6, 63.6, 63.6, 63.6, 63.7, 63.6, 63.6, 63.5, 63.5, 63.5, 63.5, 63.5, 63.5, 63.5, 63.5, 63.5, 63.5, 63.5, 63.5, 63.5, 63.5, 63.5, 63.5, 63.5, 63.5, 63.5, 63.5, 63.5, 63.5, 63.5, 63.4, 63.3, 62.9, 62.4, 61.6, 60.6, 59.2, 56.9, 52.5, 43.8, 32.1, 19.8];     // half width of the bottle every 4 units from the top
+const BOTTLE = {full:44, bottom:488, capH:24};
+const WATER_C = "#3a9bff";
+const WATER_MIN = {bicarbonate:255.4, sulfate:35.2, chloride:17.3, calcium:61.6, magnesium:18, sodium:27.6, potassium:2.6};
+const MINERALS = [{k:"calcium",n:"Calcium",nrv:800},{k:"magnesium",n:"Magnesium",nrv:375},{k:"potassium",n:"Potassium",nrv:2000},{k:"chloride",n:"Chloride",nrv:800},{k:"sodium",n:"Sodium"},{k:"bicarbonate",n:"Bicarbonate"},{k:"sulfate",n:"Sulfate"}];
+/* water volume below each height, treating the bottle as round (volume of revolution) */
+const VCUM = (() => { const c = new Array(BOTTLE_HW.length).fill(0); let acc = 0;
+  for (let i = BOTTLE_HW.length - 1; i >= 0; i--) { acc += Math.PI * BOTTLE_HW[i] ** 2 * 4; c[i] = acc; } return c; })();
+function volAt(y){ const i = Math.max(0, Math.min(VCUM.length - 1, y / 4)), i0 = Math.floor(i), i1 = Math.min(VCUM.length - 1, i0 + 1), f = i - i0; return VCUM[i0] * (1 - f) + VCUM[i1] * f; }
+const VFULL = volAt(BOTTLE.full), VEMPTY = volAt(BOTTLE.bottom);
+function pctAtY(y){ if (y >= BOTTLE.bottom) return 0; return Math.max(0, Math.min(100, (volAt(Math.max(BOTTLE.full, y)) - VEMPTY) / (VFULL - VEMPTY) * 100)); }
+function yAtPct(p){ let lo = BOTTLE.full, hi = BOTTLE.bottom; for (let k = 0; k < 32; k++) { const m = (lo + hi) / 2; if (pctAtY(m) > p) lo = m; else hi = m; } return (lo + hi) / 2; }
+
+function W(){ return S.water || (S.water = {bottleMl:1500, goalBase:2000, cur:null, events:{}}); }
+function waterEvents(){ return Object.values(W().events).sort((a, b) => a.t.localeCompare(b.t)); }
+function waterDay(k){ return waterEvents().filter(e => dkey(new Date(e.t)) === k); }
+function waterMl(k){ return sum(waterDay(k).map(e => e.ml)); }
+function waterGoal(k){ const ex = metricVal("exercise", k) || 0; return W().goalBase + Math.round(ex / 60 * 500 / 50) * 50; }
+function curBottle(){ const w = W(); if (!w.cur) w.cur = {id:"b" + Date.now().toString(36), level:100, size:w.bottleMl, start:new Date().toISOString()}; return w.cur; }
+function fmtL(ml){ return ml >= 1000 ? (ml/1000).toLocaleString(undefined, {maximumFractionDigits:2}) + " L" : Math.round(ml) + " ml"; }
+function logDrink(to){
+  const c = curBottle(); to = Math.max(0, Math.round(to)); if (to >= c.level - 0.5) return;
+  const ml = Math.round((c.level - to) / 100 * c.size), id = "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  W().events[id] = {id, t:new Date().toISOString(), bottle:c.id, from:c.level, to, ml}; c.level = to; save(); render();
+  toast(`Logged ${ml} ml<button onclick="undoDrink()" style="color:var(--blue);font-weight:600;margin-left:14px">Undo</button>`, 4000);
+}
+function undoDrink(){ const ev = waterEvents().pop(); if (!ev) return; delete W().events[ev.id]; const c = curBottle(); if (ev.bottle === c.id) c.level = ev.from; save(); render(); toast("Drink removed"); }
+function newBottle(){ const w = W(); w.cur = {id:"b" + Date.now().toString(36), level:100, size:w.bottleMl, start:new Date().toISOString()}; save(); render(); toast(`New ${fmtL(w.bottleMl)} bottle`); }
+function waterRing(size, f, sw){ sw = sw || size * 0.13; const r = size/2 - sw/2, L = 2*Math.PI*r; f = Math.max(0, f || 0);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="flex:none"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#12324d" stroke-width="${sw}"/>${f > 0 ? `<circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${WATER_C}" stroke-width="${sw}" stroke-linecap="round" stroke-dasharray="${Math.min(f,1)*L} ${L}" transform="rotate(-90 ${size/2} ${size/2})"/>` : ""}</svg>`; }
+function bottleSVG(level, {interactive=false, width=null}={}){
+  const y = yAtPct(level), id = "bt" + Math.random().toString(36).slice(2, 7), I = interactive;
+  const marks = I ? [100, 75, 50, 25].map(p => { const yy = yAtPct(p); return `<line x1="4" x2="132" y1="${yy}" y2="${yy}" stroke="rgba(255,255,255,.25)" stroke-dasharray="3 4"/><text x="-14" y="${yy+3}" text-anchor="end" class="wm">${p}%</text><text x="-14" y="${yy+17}" text-anchor="end" class="wm2">${fmtL(curBottle().size*p/100)}</text>`; }).join("") : "";
+  return `<svg ${I ? 'id="bottle"' : ""} class="chart" viewBox="${I ? "-64 -12 296 516" : "-4 -4 144 504"}" style="${width ? `width:${width}px;flex:none` : "max-height:440px;touch-action:none;cursor:ns-resize"}" role="img" aria-label="Bottle ${Math.round(level)}% full">
+    <defs><clipPath id="${id}c"><path d="${BOTTLE_D}"/></clipPath><linearGradient id="${id}g" x1="0" x2="1"><stop offset="0" stop-color="#0a84ff" stop-opacity=".7"/><stop offset=".55" stop-color="#64d2ff" stop-opacity=".95"/><stop offset="1" stop-color="#0a84ff" stop-opacity=".7"/></linearGradient></defs>
+    <path d="${BOTTLE_D}" fill="rgba(255,255,255,.05)"/>
+    <g clip-path="url(#${id}c)"><rect ${I ? 'id="wfill"' : ""} x="0" y="${y}" width="136" height="${510-y}" fill="url(#${id}g)"/><rect ${I ? 'id="wsurf"' : ""} x="0" y="${y}" width="136" height="2.5" fill="#cdeeff" opacity="${level > 0 ? .9 : 0}"/>
+      ${[300, 340, 380, 420, 452].map(r => `<line x1="0" x2="136" y1="${r}" y2="${r}" stroke="rgba(255,255,255,.12)" stroke-width="1.2"/>`).join("")}
+      <rect x="0" y="0" width="136" height="${BOTTLE.capH}" fill="rgba(255,255,255,.24)"/><line x1="0" x2="136" y1="${BOTTLE.capH}" y2="${BOTTLE.capH}" stroke="rgba(255,255,255,.4)"/></g>
+    <path d="${BOTTLE_D}" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="${width ? 5 : 1.5}"/>
+    ${marks}
+    ${I && level > 0 ? `<g id="whandle" transform="translate(0 ${y})"><line x1="-10" x2="146" y1="0" y2="0" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/><rect x="154" y="-16" width="70" height="32" rx="16" fill="#fff"/><text id="wlabel" x="189" y="5" text-anchor="middle" class="wl">${Math.round(level)}%</text></g>` : ""}
+  </svg>`;
+}
+function bindBottle(){
+  const svg = $("#bottle"); if (!svg || !$("#whandle")) return;
+  const c = curBottle(); let drag = false, lvl = c.level;
+  const svgY = e => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()).y; };
+  const show = p => { const y = yAtPct(p); $("#wfill").setAttribute("y", y); $("#wfill").setAttribute("height", 510 - y); $("#wsurf").setAttribute("y", y);
+    $("#whandle").setAttribute("transform", `translate(0 ${y})`); $("#wlabel").textContent = Math.round(p) + "%";
+    const d = Math.round((c.level - p) / 100 * c.size); $("#wdelta").innerHTML = d >= 10 ? `Drinking <b style="color:${WATER_C}">${d} ml</b>` : `${fmtL(c.level/100*c.size)} left · drag the line down as you drink`; };
+  const at = e => { let p = Math.min(c.level, pctAtY(svgY(e))); for (const m of [75, 50, 25, 0]) if (m < c.level && Math.abs(p - m) < 2.5) p = m; return p; };
+  svg.addEventListener("pointerdown", e => { drag = true; svg.setPointerCapture(e.pointerId); lvl = at(e); show(lvl); e.preventDefault(); });
+  svg.addEventListener("pointermove", e => { if (drag) { lvl = at(e); show(lvl); } });
+  const end = () => { if (!drag) return; drag = false; if (c.level - lvl >= 1) logDrink(lvl); else show(c.level); };
+  svg.addEventListener("pointerup", end); svg.addEventListener("pointercancel", end);
+}
+function waterSummaryCard(){
+  const t = TODAY(), ml = waterMl(t), goal = waterGoal(t), c = curBottle(), n = waterDay(t).length;
+  return `<div class="card tap" onclick="go({t:'water'})"><div class="between"><div class="row" style="gap:14px">${bottleSVG(c.level, {width:28})}
+    <div><div class="ct" style="justify-content:flex-start;color:${WATER_C}">Hydration</div><div class="big">${(ml/1000).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}<span class="u">L</span></div>
+    <div class="sub">of ${fmtL(goal)} · ${n} drink${n === 1 ? "" : "s"} · bottle ${Math.round(c.level)}%</div></div></div>${waterRing(52, ml / goal)}</div></div>`;
+}
+function waterCalendar(){
+  const m = R.wMonth || TODAY().slice(0, 7), [Y, M] = m.split("-").map(Number), first = new Date(Y, M-1, 1), dim = new Date(Y, M, 0).getDate(), lead = (first.getDay() + 6) % 7, sel = R.wDay || TODAY();
+  let cells = ""; for (let i = 0; i < lead; i++) cells += "<div></div>";
+  const logged = [];
+  for (let d = 1; d <= dim; d++) { const k = `${m}-${String(d).padStart(2, "0")}`, ml = waterMl(k), fut = k > TODAY(); if (ml) logged.push(ml);
+    cells += `<button class="wday ${k === sel ? "on" : ""}" ${fut ? "disabled" : ""} aria-label="${fmtDate(k)}: ${fmtL(ml)}" onclick="R.wDay='${k}';render()"><span>${d}</span>${ml ? waterRing(28, ml / waterGoal(k), 3.5) : "<i></i>"}</button>`; }
+  const prevM = dkey(new Date(Y, M-2, 1)).slice(0, 7), nextM = dkey(new Date(Y, M, 1)).slice(0, 7), noNext = nextM > TODAY().slice(0, 7);
+  const days = waterDay(sel), tot = sum(days.map(e => e.ml));
+  return `<h2>Calendar</h2><div class="card"><div class="between" style="margin-bottom:10px"><button class="back" aria-label="Previous month" style="font-size:24px;padding:0 8px" onclick="R.wMonth='${prevM}';render()">‹</button>
+    <b>${first.toLocaleDateString("en-GB", {month:"long", year:"numeric"})}</b><button class="back" aria-label="Next month" style="font-size:24px;padding:0 8px;${noNext ? "opacity:.25;pointer-events:none" : ""}" onclick="R.wMonth='${nextM}';render()">›</button></div>
+    <div class="wcal">${["M","T","W","T","F","S","S"].map(x => `<div class="sub" style="text-align:center;font-weight:600">${x}</div>`).join("")}${cells}</div>
+    <div class="sub" style="margin-top:10px">${logged.length ? `Average ${fmtL(avg(logged))} a day on ${logged.length} logged day${logged.length > 1 ? "s" : ""} this month` : "No drinks logged this month yet"}</div>
+    <div style="border-top:.5px solid var(--sep);margin-top:10px;padding-top:10px"><div class="between"><b>${relDay(sel)}</b><span class="mid" style="font-size:17px;color:${WATER_C}">${fmtL(tot)}</span></div>
+    ${days.length ? days.map(e => `<div class="setrow"><span class="muted">${timeOf(e.t)}</span><span style="font-family:var(--round);font-weight:600">${e.ml} ml</span></div>`).join("") : `<div class="sub" style="margin-top:4px">No drinks logged</div>`}</div></div>`;
+}
+function mineralsCard(ml){
+  const L = ml / 1000;
+  return `<h2><span class="h2l">Minerals Today${infoBtn("minerals")}</span></h2><div class="card">${MINERALS.map(m => { const mg = WATER_MIN[m.k] * L, pct = m.nrv ? mg / m.nrv * 100 : null;
+    return `<div class="zone" style="grid-template-columns:92px 1fr 66px"><div>${m.n}</div><div class="bar" style="${pct == null ? "background:transparent" : ""}">${pct != null ? `<i style="width:${Math.min(100, pct).toFixed(1)}%;background:${WATER_C}"></i>` : ""}</div><div style="text-align:right;font-family:var(--round);font-weight:600">${num(mg, mg < 10 ? 1 : 0)} mg</div></div>`; }).join("")}
+    <div class="sub" style="margin-top:6px">From ${fmtL(ml)} of your water. Bars show the share of the daily reference intake, where one exists.</div></div>`;
+}
+function vWater(){
+  const t = TODAY(), c = curBottle(), ml = waterMl(t), goal = waterGoal(t), drinks = waterDay(t), w = W(), exMin = metricVal("exercise", t) || 0;
+  let h = navBar("") + `<h1 class="h2l" style="font-size:28px;margin:4px 0 12px">Hydration${infoBtn("water")}</h1>`;
+  h += `<div class="card"><div class="between"><div><div class="eyebrow">Today</div><div class="big" style="color:${WATER_C}">${(ml/1000).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}<span class="u">L</span></div>
+    <div class="sub">of ${fmtL(goal)} goal · ${drinks.length} drink${drinks.length === 1 ? "" : "s"}</div></div>${waterRing(64, ml / goal)}</div></div>`;
+  h += `<div class="card" style="padding-top:18px">${bottleSVG(c.level, {interactive:true})}
+    <div id="wdelta" class="sub" style="text-align:center;font-size:15px;margin-top:8px">${c.level > 0 ? `${fmtL(c.level/100*c.size)} left · drag the line down as you drink` : "Bottle finished. Start a new one when you open it."}</div>
+    <div class="grid2" style="margin-top:12px"><button class="btn" style="margin:0;${c.level <= 0 ? `background:${WATER_C};color:#fff` : `color:${WATER_C}`}" onclick="newBottle()">New Bottle</button>
+    <button class="btn" style="margin:0" onclick="undoDrink()" ${waterEvents().length ? "" : "disabled"}>Undo</button></div></div>`;
+  h += waterCalendar() + mineralsCard(ml);
+  h += `<h2>Bottle and Goal</h2><div class="card">
+    <div class="field"><span>Bottle size</span><select onchange="W().bottleMl=+this.value;const c=curBottle();if(!Object.values(W().events).some(e=>e.bottle===c.id))c.size=+this.value;save();render()">${[500, 750, 1000, 1500, 2000].map(v => `<option value="${v}" ${v === w.bottleMl ? "selected" : ""}>${fmtL(v)}</option>`).join("")}</select></div>
+    <div class="field"><span>Daily goal</span><select onchange="W().goalBase=+this.value;save();render()">${[1500, 2000, 2500, 3000].map(v => `<option value="${v}" ${v === w.goalBase ? "selected" : ""}>${fmtL(v)}</option>`).join("")}</select></div>
+    <div class="sub">Today: ${fmtL(w.goalBase)}${goal > w.goalBase ? ` + ${fmtL(goal - w.goalBase)} for ${Math.round(exMin)} min of exercise` : ""}.</div></div>`;
+  return h;
+}
+
 /* ============================================================ views */
 function render(){
   const top = R.stack[R.stack.length-1];
   let html;
   try {
     if (!top) html = ({summary:vSummary, workouts:vWorkouts, gym:vGym, health:vHealth})[R.tab]();
-    else html = ({workout:vWorkout, metric:vMetric, session:vSession, exercise:vExercise, settings:vSettings, addset:vAddSet, allworkouts:vWorkouts, highlights:vHighlights})[top.t](top);
+    else html = ({workout:vWorkout, metric:vMetric, session:vSession, exercise:vExercise, settings:vSettings, addset:vAddSet, allworkouts:vWorkouts, highlights:vHighlights, water:vWater})[top.t](top);
   } catch(e) { console.error(e); html = `<div class="card">Something went wrong: ${esc(e.message)}</div>`; }
   $("#app").innerHTML = html;
   $("#tabbar").innerHTML = `<div class="in">${[["summary","Summary"],["workouts","Workouts"],["gym","Gym"],["health","Health"]].map(([k,n]) =>
     `<button class="${R.tab===k?"on":""}" onclick="setTab('${k}')">${IC[k]}<span>${n}</span></button>`).join("")}</div>`;
   bindCharts();
+  bindBottle();
 }
 function welcome(){
   return `<div class="card" style="padding:20px">
@@ -747,6 +871,7 @@ function vSummary(){
       ${m.agg==="sum" ? `<div style="margin-top:10px">${barChart(sp, m.hex, {h:70, spark:true})}</div>` : ""}</div>`;
   }).join("");
   h += vitalsCard();
+  h += waterSummaryCard();
   if (tiles) h += `<h2>Pinned</h2><div class="grid2">${tiles}</div>`;
   const HL = highlights();
   if (HL.length) h += `<h2><span class="h2l">Highlights${infoBtn("highlights")}</span>${HL.length > 2 ? `<small class="tap" onclick="go({t:'highlights'})">Show All</small>` : ""}</h2>` + HL.slice(0, 2).map(highlightCard).join("");
@@ -998,6 +1123,7 @@ function vHealth(){
   h += vitalsCard();
   h += `<h2>Sleep</h2>` + (ls ? sleepCard(S.days[ls.k].sleep, ls.k) + `<div class="card tap" onclick="go({t:'metric',k:'sleep'})"><div class="ct"><span style="color:var(--sleep)">Last 14 nights</span><span class="chev">›</span></div>${barChart(series("sleep",14).map(x=>({label:pday(x.k).toLocaleDateString("en-GB",{weekday:"narrow"}),v:x.v})), "#5ac8fa", {h:110, goal:8})}</div>`
     : `<div class="card empty">Wear your Apple Watch to bed with a sleep schedule set up to see your sleep here.</div>`);
+  h += `<h2>Hydration</h2>` + waterSummaryCard();
   h += `<h2>Heart</h2>` + metricRow("rhr") + metricRow("hrv") + metricRow("walkHr") + (metricRow("vo2") || `<div class="card"><div class="ct" style="color:var(--heart)">Cardio Fitness (VO₂ max)</div><div class="sub" style="margin-top:4px">Your Watch estimates this after outdoor walks or runs with GPS. It usually appears within a few days.</div></div>`);
   h += `<h2>Breathing</h2>` + (metricRow("respRate") || `<div class="card sub">Respiratory rate is measured while you sleep.</div>`);
   h += `<h2>Body</h2>` + metricRow("weight");

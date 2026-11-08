@@ -5,6 +5,11 @@ Numbering is MAJOR.MINOR.PATCH:
 - **MINOR**: new screens or features.
 - **PATCH**: fixes and small visual tweaks.
 
+## 1.4.0 (8 Nov 2026)
+- Hydration: drag the water line on your bottle as you drink. Each drop is logged with its time.
+- New Bottle and Undo, a calendar of every day's water, and the minerals your water gives you.
+- Hydration on Summary and Health, and in Highlights once there's enough data.
+
 ## 1.3.0 (8 Nov 2026)
 - Profile name at the top of Settings. Tap Edit to change it.
 - Simpler Settings: Profile and Data sections removed.
