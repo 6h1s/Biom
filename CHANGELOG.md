@@ -5,6 +5,11 @@ Numbering is MAJOR.MINOR.PATCH:
 - **MINOR**: new screens or features.
 - **PATCH**: fixes and small visual tweaks.
 
+## 1.5.0 (8 Nov 2026)
+- Gym calendar: every day you trained, with its muscle groups and exercises.
+- Hydration Edit mode: tap Edit to move the water line back up or delete a drink, to fix mistakes.
+- Calorie and activity goals removed for now. Activity shows your values and the last 7 days.
+
 ## 1.4.0 (8 Nov 2026)
 - Hydration: drag the water line on your bottle as you drink. Each drop is logged with its time.
 - New Bottle and Undo, a calendar of every day's water, and the minerals your water gives you.

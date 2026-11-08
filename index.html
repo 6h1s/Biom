@@ -110,6 +110,14 @@ table.splits td{padding:8px 0;border-top:.5px solid var(--sep);font-family:var(-
 .wday i{width:28px;height:28px;border-radius:50%;border:3.5px solid #12324d;display:block}
 .wday:disabled{opacity:.3}
 .btn:disabled{opacity:.35}
+.gdots{display:flex;gap:3px;height:8px;align-items:center;justify-content:center}
+.wday .gdots i{width:7px;height:7px;border-radius:50%;border:0}
+.act3{display:grid;grid-template-columns:repeat(3,1fr)}
+.act3 > div{padding:0 10px;border-left:.5px solid var(--sep);min-width:0}
+.act3 > div:first-child{padding-left:0;border-left:0}
+.act3 > div:last-child{padding-right:0}
+.editbtn{color:var(--blue);font-size:17px;font-weight:400}
+.editbtn.on{font-weight:600}
 .ver{font-family:var(--round);font-size:11px;font-weight:600;color:#48484a;letter-spacing:.02em;padding:2px 0}
 .info{display:inline-grid;place-items:center;width:22px;height:22px;color:var(--blue);vertical-align:middle;margin-left:6px;flex:none}
 .info svg{width:20px;height:20px}
@@ -154,12 +162,13 @@ h2 .info{margin-left:8px}
    Biom: a personal health and training dashboard.
    All data lives on this device (IndexedDB). Nothing is sent anywhere.
    ============================================================ */
-const APP_VERSION = "1.4.0";
+const APP_VERSION = "1.5.0";
 /* Versions: MAJOR.MINOR.PATCH
    MAJOR = big redesign or a change in how data is stored (may need a re-import)
    MINOR = new screens or features
    PATCH = fixes and small visual tweaks */
 const CHANGELOG = [
+  {v:"1.5.0", d:"8 Nov 2026", items:["Gym calendar: every day you trained, with its muscle groups and exercises.","Hydration Edit mode: tap Edit to move the water line back up or delete a drink, to fix mistakes.","Calorie and activity goals removed for now. Activity shows your values and the last 7 days."]},
   {v:"1.4.0", d:"8 Nov 2026", items:["Hydration: drag the water line on your bottle as you drink. Each drop is logged with its time.","New Bottle and Undo, a calendar of every day's water, and the minerals your water gives you.","Hydration on Summary and Health, and in Highlights once there's enough data."]},
   {v:"1.3.0", d:"8 Nov 2026", items:["Profile name at the top of Settings. Tap Edit to change it.","Simpler Settings: Profile and Data sections removed."]},
   {v:"1.2.2", d:"8 Nov 2026", items:["Check for Updates in Settings › Software Update and in What's New.","Reload Biom from Settings if a screen looks out of date."]},
@@ -216,10 +225,11 @@ const METRICS = {
   weight:    {n:"Weight", u:"kg", c:"var(--body)", hex:"#bf5af2", agg:"avg", dp:1, get:d=>d.weight, lowerBetter:null},
   walkSpeed: {n:"Walking Speed", u:"km/h", c:"var(--activity)", hex:"#ff9f0a", agg:"avg", dp:1, get:d=>d.walkSpeed},
   stepLenCm: {n:"Walking Step Length", u:"cm", c:"var(--activity)", hex:"#ff9f0a", agg:"avg", get:d=>d.stepLenCm},
+  stand:     {n:"Stand Hours", short:"Stand", u:"hrs", c:"var(--stand)", hex:"#00f0ff", agg:"sum", get:d=>d.rings&&d.rings.stand!=null?d.rings.stand:d.standHours},
   daylightMin:{n:"Time in Daylight", u:"min", c:"var(--time)", hex:"#ffd60a", agg:"sum", get:d=>d.daylightMin},
 };
 
-const ABOUT = {"move": "Active energy is the calories you burn by moving, on top of what your body burns at rest. Your Move ring closes when you reach the daily goal set on your Apple Watch.", "exercise": "Minutes of activity at the intensity of a brisk walk or more, measured by your Apple Watch from your heart rate and movement.", "steps": "Counted by your iPhone and your Apple Watch. When both count at the same time, Biom keeps the Watch's count so steps aren't counted twice.", "distKm": "Distance covered on foot, walking or running, estimated from your steps and stride length, and from GPS during outdoor workouts.", "flights": "One flight is about 3 metres of climbing, detected by the barometer in your iPhone and Apple Watch.", "sleep": "Time actually asleep, not just in bed, detected by your Apple Watch. <b>Core</b> is light sleep, <b>Deep</b> is the most restorative for the body, <b>REM</b> is when you dream and consolidate memories, and <b>Awake</b> counts short wake-ups, which are normal. Most adults need 7 to 9 hours.", "rhr": "Your heart rate at rest, measured by your Watch during calm moments. A lower value usually reflects better cardiovascular fitness. Illness, stress, alcohol or a hard training block can raise it for a few days.", "hrv": "The variation in time between heartbeats, measured at night and at rest (SDNN, in milliseconds). Higher usually means your body is well recovered. It varies a lot between people, so compare it with your own typical range, not with others.", "walkHr": "Your average heart rate while walking during the day. It tends to go down as your fitness improves.", "vo2": "The maximum amount of oxygen your body can use during exercise, estimated by your Watch during outdoor walks, runs and hikes. It is one of the best overall indicators of cardiovascular fitness.", "respRate": "Breaths per minute, measured while you sleep. It is usually very stable; a rise can be an early sign of illness.", "weight": "From the Health app, a smart scale or your own entries. Day-to-day changes are mostly water, so look at the trend over several weeks.", "walkSpeed": "Your usual walking speed on flat ground, measured by your iPhone as you walk. It is a good long-term indicator of mobility.", "stepLenCm": "The average length of one step while walking, measured by your iPhone.", "daylightMin": "Time spent outdoors in daylight, measured by the light sensor in your Apple Watch."};
+const ABOUT = {"stand":"Hours of the day in which you stood up and moved around for at least one minute, detected by your Apple Watch.","move": "Active energy is the calories you burn by moving, on top of what your body burns at rest. Your Move ring closes when you reach the daily goal set on your Apple Watch.", "exercise": "Minutes of activity at the intensity of a brisk walk or more, measured by your Apple Watch from your heart rate and movement.", "steps": "Counted by your iPhone and your Apple Watch. When both count at the same time, Biom keeps the Watch's count so steps aren't counted twice.", "distKm": "Distance covered on foot, walking or running, estimated from your steps and stride length, and from GPS during outdoor workouts.", "flights": "One flight is about 3 metres of climbing, detected by the barometer in your iPhone and Apple Watch.", "sleep": "Time actually asleep, not just in bed, detected by your Apple Watch. <b>Core</b> is light sleep, <b>Deep</b> is the most restorative for the body, <b>REM</b> is when you dream and consolidate memories, and <b>Awake</b> counts short wake-ups, which are normal. Most adults need 7 to 9 hours.", "rhr": "Your heart rate at rest, measured by your Watch during calm moments. A lower value usually reflects better cardiovascular fitness. Illness, stress, alcohol or a hard training block can raise it for a few days.", "hrv": "The variation in time between heartbeats, measured at night and at rest (SDNN, in milliseconds). Higher usually means your body is well recovered. It varies a lot between people, so compare it with your own typical range, not with others.", "walkHr": "Your average heart rate while walking during the day. It tends to go down as your fitness improves.", "vo2": "The maximum amount of oxygen your body can use during exercise, estimated by your Watch during outdoor walks, runs and hikes. It is one of the best overall indicators of cardiovascular fitness.", "respRate": "Breaths per minute, measured while you sleep. It is usually very stable; a rise can be an early sign of illness.", "weight": "From the Health app, a smart scale or your own entries. Day-to-day changes are mostly water, so look at the trend over several weeks.", "walkSpeed": "Your usual walking speed on flat ground, measured by your iPhone as you walk. It is a good long-term indicator of mobility.", "stepLenCm": "The average length of one step while walking, measured by your iPhone.", "daylightMin": "Time spent outdoors in daylight, measured by the light sensor in your Apple Watch."};
 /* ============================================================ storage */
 const DB_NAME = "pulse", STORE = "kv";
 function idb(){ return new Promise((res, rej) => { const r = indexedDB.open(DB_NAME, 1);
@@ -562,10 +572,10 @@ const RANGE_INFO = {
 };
 const INFO = {
   whatsnew:{t:"What's New", b:`<button class="btn" style="margin:4px 0 10px;color:var(--blue)" onclick="checkUpdate(true)">Check for Updates</button>${CHANGELOG.map((c,i) => `<p style="margin-top:${i?18:6}px"><b style="color:#fff;font-size:17px">Version ${c.v}</b>${i===0?' <span class="pill" style="margin-left:6px;color:#30d158;background:#30d15822">Current</span>':""}<br><span style="color:var(--label2);font-size:13px">${c.d}</span></p><ul style="margin:6px 0 0;padding-left:20px">${c.items.map(x=>`<li style="margin:4px 0">${x}</li>`).join("")}</ul>`).join("")}<p style="margin-top:22px;color:var(--label2);font-size:13px">Numbering: the first number changes for a big redesign, the second for new features, the third for fixes and small tweaks.</p>`},
-  water:{t:"Hydration", b:`<p><b>Log a drink:</b> drag the white line down to where the water is in your bottle now. Biom logs the difference as one drink, with the time.</p><p><b>The markers follow your bottle's real shape.</b> The shoulder holds less water than the straight part, so 75% sits a little lower than three quarters of the height.</p><p><b>New Bottle</b> starts a full one. Whatever was left in the previous bottle isn't counted. <b>Undo</b> removes your last drink.</p><p><b>Daily goal:</b> about 2 L from drinks, plus 0.5 L for each hour of exercise that day. This follows the European Food Safety Authority's reference of 2.5 L of total water a day for men, about a fifth of which comes from food. Drink more in heat and on long runs.</p>`},
+  water:{t:"Hydration", b:`<p><b>Log a drink:</b> drag the white line down to where the water is in your bottle now. Biom logs the difference as one drink, with the time.</p><p><b>The markers follow your bottle's real shape.</b> The shoulder holds less water than the straight part, so 75% sits a little lower than three quarters of the height.</p><p><b>Made a mistake?</b> Tap <b>Edit</b>: you can then move the line back up (the water goes back into the bottle) or delete any drink in the calendar. Tap <b>Done</b> when finished.</p><p><b>New Bottle</b> starts a full one. Whatever was left in the previous bottle isn't counted. <b>Undo</b> removes your last drink.</p><p><b>Daily goal:</b> about 2 L from drinks, plus 0.5 L for each hour of exercise that day. This follows the European Food Safety Authority's reference of 2.5 L of total water a day for men, about a fifth of which comes from food. Drink more in heat and on long runs.</p>`},
   minerals:{t:"Minerals in Your Water", b:`<p>Your water contains, per litre: bicarbonate 255.4 mg, sulfate 35.2 mg, chloride 17.3 mg, calcium 61.6 mg, magnesium 18 mg, sodium 27.6 mg and potassium 2.6 mg. Biom multiplies these by what you drank.</p><p>Bars show the share of the EU daily reference intake: calcium 800 mg, magnesium 375 mg, potassium 2,000 mg, chloride 800 mg.</p><p><b>For running:</b> sweat loses roughly 0.5–1 g of sodium per litre, while this water gives under 30 mg per litre. On long or hot runs, salt has to come from food or a sports drink, not from water.</p><p>General information, not medical advice.</p>`},
   ranges:{t:"Chart Ranges", b:`<dl>${Object.entries(RANGE_INFO).map(([k,v])=>`<dt>${k} · ${v.n}</dt><dd>${v.d}</dd>`).join("")}</dl><p>The dashed white line is the average for the whole period. Tap any bar to see its exact value.</p>`},
-  rings:{t:"Activity Rings", b:`<dl><dt style="color:var(--move)">Move</dt><dd>Active calories burned by moving.</dd><dt style="color:var(--exercise)">Exercise</dt><dd>Minutes of activity at the level of a brisk walk or more.</dd><dt style="color:var(--stand)">Stand</dt><dd>Hours in which you stood and moved for at least one minute.</dd></dl><p>Goals come from your Apple Watch. The small rings show your last 7 days.</p>`},
+  rings:{t:"Activity", b:`<dl><dt style="color:var(--move)">Move</dt><dd>Active calories burned by moving.</dd><dt style="color:var(--exercise)">Exercise</dt><dd>Minutes of activity at the level of a brisk walk or more.</dd><dt style="color:var(--stand)">Stand</dt><dd>Hours in which you stood and moved for at least one minute.</dd></dl><p>The small bars show your last 7 days, today on the right. Biom doesn't set daily goals for now.</p>`},
   vitals:{t:"Overnight Vitals", b:`<p>Compares last night's resting heart rate, heart rate variability, breathing rate and sleep with <b>your own typical range</b>: the grey band, based on your previous 4 weeks. The dot is last night's value.</p><p>One value outside its range is common and rarely meaningful. Several at once can mean your body is under strain: illness starting, stress, alcohol, a late meal or a hard training day.</p><p>Biom needs 7 nights of data before it can set a typical range. This is not a medical device.</p>`},
   highlights:{t:"Highlights", b:`<p>Highlights compare your recent data with your own past, and cross different kinds of data, like sleep and activity, to show patterns. The coloured dots show which kinds of data are combined.</p><p>A highlight only appears when there is enough data to compare fairly, for example at least 4 nights in each group. They show patterns, not causes.</p>`},
   trends:{t:"Trends", b:`<p>Compares your average over the last 7 days with your average over the 4 weeks before.</p><dl><dt>Arrow in colour</dt><dd>Going in a good direction.</dd><dt style="color:#ff9f0a">Orange arrow</dt><dd>Going down compared with your usual.</dd><dt style="color:#8e8e93">Grey arrow</dt><dd>About the same (within 3%).</dd></dl>`},
@@ -742,11 +752,25 @@ function logDrink(to){
   W().events[id] = {id, t:new Date().toISOString(), bottle:c.id, from:c.level, to, ml}; c.level = to; save(); render();
   toast(`Logged ${ml} ml<button onclick="undoDrink()" style="color:var(--blue);font-weight:600;margin-left:14px">Undo</button>`, 4000);
 }
+/* Edit mode: moving the line back up gives water back, taken from the most recent drinks of this bottle */
+function raiseLevel(to){
+  const c = curBottle(); let give = Math.round(to) - c.level; if (give < 1) return;
+  for (const e of waterEvents().filter(x => x.bottle === c.id).reverse()) {
+    if (give <= 0) break; const take = Math.min(e.from - e.to, give); e.to += take; give -= take; c.level += take;
+    e.ml = Math.round((e.from - e.to) / 100 * c.size); if (e.from - e.to < 0.5) delete W().events[e.id];
+  }
+  save(); render(); toast(`Bottle corrected to ${Math.round(c.level)}%`);
+}
+function deleteDrink(id){
+  const e = W().events[id]; if (!e) return; const c = curBottle();
+  if (e.bottle === c.id) c.level = Math.min(100, c.level + (e.from - e.to));
+  delete W().events[id]; save(); render(); toast(`Deleted ${e.ml} ml`);
+}
 function undoDrink(){ const ev = waterEvents().pop(); if (!ev) return; delete W().events[ev.id]; const c = curBottle(); if (ev.bottle === c.id) c.level = ev.from; save(); render(); toast("Drink removed"); }
-function newBottle(){ const w = W(); w.cur = {id:"b" + Date.now().toString(36), level:100, size:w.bottleMl, start:new Date().toISOString()}; save(); render(); toast(`New ${fmtL(w.bottleMl)} bottle`); }
+function newBottle(){ R.wEdit = false; const w = W(); w.cur = {id:"b" + Date.now().toString(36), level:100, size:w.bottleMl, start:new Date().toISOString()}; save(); render(); toast(`New ${fmtL(w.bottleMl)} bottle`); }
 function waterRing(size, f, sw){ sw = sw || size * 0.13; const r = size/2 - sw/2, L = 2*Math.PI*r; f = Math.max(0, f || 0);
   return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="flex:none"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#12324d" stroke-width="${sw}"/>${f > 0 ? `<circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${WATER_C}" stroke-width="${sw}" stroke-linecap="round" stroke-dasharray="${Math.min(f,1)*L} ${L}" transform="rotate(-90 ${size/2} ${size/2})"/>` : ""}</svg>`; }
-function bottleSVG(level, {interactive=false, width=null}={}){
+function bottleSVG(level, {interactive=false, width=null, edit=false}={}){
   const y = yAtPct(level), id = "bt" + Math.random().toString(36).slice(2, 7), I = interactive;
   const marks = I ? [100, 75, 50, 25].map(p => { const yy = yAtPct(p); return `<line x1="4" x2="132" y1="${yy}" y2="${yy}" stroke="rgba(255,255,255,.25)" stroke-dasharray="3 4"/><text x="-14" y="${yy+3}" text-anchor="end" class="wm">${p}%</text><text x="-14" y="${yy+17}" text-anchor="end" class="wm2">${fmtL(curBottle().size*p/100)}</text>`; }).join("") : "";
   return `<svg ${I ? 'id="bottle"' : ""} class="chart" viewBox="${I ? "-64 -12 296 516" : "-4 -4 144 504"}" style="${width ? `width:${width}px;flex:none` : "max-height:440px;touch-action:none;cursor:ns-resize"}" role="img" aria-label="Bottle ${Math.round(level)}% full">
@@ -757,20 +781,22 @@ function bottleSVG(level, {interactive=false, width=null}={}){
       <rect x="0" y="0" width="136" height="${BOTTLE.capH}" fill="rgba(255,255,255,.24)"/><line x1="0" x2="136" y1="${BOTTLE.capH}" y2="${BOTTLE.capH}" stroke="rgba(255,255,255,.4)"/></g>
     <path d="${BOTTLE_D}" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="${width ? 5 : 1.5}"/>
     ${marks}
-    ${I && level > 0 ? `<g id="whandle" transform="translate(0 ${y})"><line x1="-10" x2="146" y1="0" y2="0" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/><rect x="154" y="-16" width="70" height="32" rx="16" fill="#fff"/><text id="wlabel" x="189" y="5" text-anchor="middle" class="wl">${Math.round(level)}%</text></g>` : ""}
+    ${I && (level > 0 || edit) ? `<g id="whandle" transform="translate(0 ${y})"><line x1="-10" x2="146" y1="0" y2="0" stroke="${edit ? WATER_C : "#fff"}" stroke-width="3.5" stroke-linecap="round"/><rect x="154" y="-16" width="70" height="32" rx="16" fill="${edit ? WATER_C : "#fff"}"/><text id="wlabel" x="189" y="5" text-anchor="middle" class="wl" style="fill:${edit ? "#fff" : "#000"}">${Math.round(level)}%</text></g>` : ""}
   </svg>`;
 }
 function bindBottle(){
   const svg = $("#bottle"); if (!svg || !$("#whandle")) return;
-  const c = curBottle(); let drag = false, lvl = c.level;
+  const c = curBottle(), edit = !!R.wEdit; let drag = false, lvl = c.level;
+  const maxUp = edit ? Math.min(100, c.level + sum(waterEvents().filter(e => e.bottle === c.id).map(e => e.from - e.to))) : c.level;
   const svgY = e => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()).y; };
   const show = p => { const y = yAtPct(p); $("#wfill").setAttribute("y", y); $("#wfill").setAttribute("height", 510 - y); $("#wsurf").setAttribute("y", y);
     $("#whandle").setAttribute("transform", `translate(0 ${y})`); $("#wlabel").textContent = Math.round(p) + "%";
-    const d = Math.round((c.level - p) / 100 * c.size); $("#wdelta").innerHTML = d >= 10 ? `Drinking <b style="color:${WATER_C}">${d} ml</b>` : `${fmtL(c.level/100*c.size)} left · drag the line down as you drink`; };
-  const at = e => { let p = Math.min(c.level, pctAtY(svgY(e))); for (const m of [75, 50, 25, 0]) if (m < c.level && Math.abs(p - m) < 2.5) p = m; return p; };
+    const d = Math.round((c.level - p) / 100 * c.size);
+    $("#wdelta").innerHTML = d >= 10 ? `Drinking <b style="color:${WATER_C}">${d} ml</b>` : d <= -10 ? `Giving back <b style="color:${WATER_C}">${-d} ml</b>` : edit ? "Drag the line up or down to correct it" : `${fmtL(c.level/100*c.size)} left · drag the line down as you drink`; };
+  const at = e => { let p = Math.min(maxUp, pctAtY(svgY(e))); for (const m of [100, 75, 50, 25, 0]) if (m <= maxUp && Math.abs(p - m) < 2.5) p = m; return p; };
   svg.addEventListener("pointerdown", e => { drag = true; svg.setPointerCapture(e.pointerId); lvl = at(e); show(lvl); e.preventDefault(); });
   svg.addEventListener("pointermove", e => { if (drag) { lvl = at(e); show(lvl); } });
-  const end = () => { if (!drag) return; drag = false; if (c.level - lvl >= 1) logDrink(lvl); else show(c.level); };
+  const end = () => { if (!drag) return; drag = false; if (c.level - lvl >= 1) logDrink(lvl); else if (edit && lvl - c.level >= 1) raiseLevel(lvl); else show(c.level); };
   svg.addEventListener("pointerup", end); svg.addEventListener("pointercancel", end);
 }
 function waterSummaryCard(){
@@ -792,7 +818,7 @@ function waterCalendar(){
     <div class="wcal">${["M","T","W","T","F","S","S"].map(x => `<div class="sub" style="text-align:center;font-weight:600">${x}</div>`).join("")}${cells}</div>
     <div class="sub" style="margin-top:10px">${logged.length ? `Average ${fmtL(avg(logged))} a day on ${logged.length} logged day${logged.length > 1 ? "s" : ""} this month` : "No drinks logged this month yet"}</div>
     <div style="border-top:.5px solid var(--sep);margin-top:10px;padding-top:10px"><div class="between"><b>${relDay(sel)}</b><span class="mid" style="font-size:17px;color:${WATER_C}">${fmtL(tot)}</span></div>
-    ${days.length ? days.map(e => `<div class="setrow"><span class="muted">${timeOf(e.t)}</span><span style="font-family:var(--round);font-weight:600">${e.ml} ml</span></div>`).join("") : `<div class="sub" style="margin-top:4px">No drinks logged</div>`}</div></div>`;
+    ${days.length ? days.map(e => `<div class="setrow"><span class="muted">${timeOf(e.t)}</span><span><b style="font-family:var(--round)">${e.ml} ml</b>${R.wEdit ? `<button class="del" onclick="deleteDrink('${e.id}')">Delete</button>` : ""}</span></div>`).join("") : `<div class="sub" style="margin-top:4px">No drinks logged</div>`}</div></div>`;
 }
 function mineralsCard(ml){
   const L = ml / 1000;
@@ -805,8 +831,10 @@ function vWater(){
   let h = navBar("") + `<h1 class="h2l" style="font-size:28px;margin:4px 0 12px">Hydration${infoBtn("water")}</h1>`;
   h += `<div class="card"><div class="between"><div><div class="eyebrow">Today</div><div class="big" style="color:${WATER_C}">${(ml/1000).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}<span class="u">L</span></div>
     <div class="sub">of ${fmtL(goal)} goal · ${drinks.length} drink${drinks.length === 1 ? "" : "s"}</div></div>${waterRing(64, ml / goal)}</div></div>`;
-  h += `<div class="card" style="padding-top:18px">${bottleSVG(c.level, {interactive:true})}
-    <div id="wdelta" class="sub" style="text-align:center;font-size:15px;margin-top:8px">${c.level > 0 ? `${fmtL(c.level/100*c.size)} left · drag the line down as you drink` : "Bottle finished. Start a new one when you open it."}</div>
+  const ed = !!R.wEdit;
+  h += `<div class="card" style="padding-top:12px"><div class="between"><span class="sub">${ed ? `<b style="color:${WATER_C}">Editing</b>` : `Bottle · ${fmtL(c.size)}`}</span><button class="editbtn ${ed ? "on" : ""}" onclick="R.wEdit=!R.wEdit;render()">${ed ? "Done" : "Edit"}</button></div>
+    ${bottleSVG(c.level, {interactive:true, edit:ed})}
+    <div id="wdelta" class="sub" style="text-align:center;font-size:15px;margin-top:8px">${ed ? "Drag the line up or down to correct it. You can also delete a drink in the calendar below." : c.level > 0 ? `${fmtL(c.level/100*c.size)} left · drag the line down as you drink` : "Bottle finished. Start a new one when you open it."}</div>
     <div class="grid2" style="margin-top:12px"><button class="btn" style="margin:0;${c.level <= 0 ? `background:${WATER_C};color:#fff` : `color:${WATER_C}`}" onclick="newBottle()">New Bottle</button>
     <button class="btn" style="margin:0" onclick="undoDrink()" ${waterEvents().length ? "" : "disabled"}>Undo</button></div></div>`;
   h += waterCalendar() + mineralsCard(ml);
@@ -852,16 +880,9 @@ function vSummary(){
   let h = topBar(fmtDate(t), "Summary");
   if (!Object.keys(S.days).length && !setsList().length) return h + welcome();
   h += backupBanner();
-  const r = ringsFor(t);
-  h += `<h2><span class="h2l">Activity${infoBtn("rings")}</span></h2><div class="card tap" onclick="go({t:'metric',k:'move'})"><div class="row" style="gap:18px">
-    ${ringsSVG(124,[r.move/r.moveGoal, r.exercise/r.exerciseGoal, r.stand/r.standGoal])}
-    <div class="ringstats">
-      <div class="stat"><div class="lbl">Move</div><div class="mid" style="color:var(--move)">${num(r.move)}/${num(r.moveGoal)}<span class="u">kcal</span></div></div>
-      <div class="stat"><div class="lbl">Exercise</div><div class="mid" style="color:var(--exercise)">${num(r.exercise)}/${num(r.exerciseGoal)}<span class="u">min</span></div></div>
-      <div class="stat"><div class="lbl">Stand</div><div class="mid" style="color:var(--stand)">${num(r.stand)}/${num(r.standGoal)}<span class="u">hrs</span></div></div>
-    </div></div>
-    <div class="week">${[6,5,4,3,2,1,0].map(i => { const k = addDays(t,-i), rr = ringsFor(k);
-      return `<div>${ringsSVG(34,[rr.move/rr.moveGoal, rr.exercise/rr.exerciseGoal, rr.stand/rr.standGoal],{stroke:4})}<br>${pday(k).toLocaleDateString("en-GB",{weekday:"narrow"})}</div>`; }).join("")}</div></div>`;
+  const actCol = (k, label) => { const m = METRICS[k], v = metricVal(k, t), sp = series(k, 7).map(x => ({v:x.v}));
+    return `<div class="tap" onclick="go({t:'metric',k:'${k}'})"><div style="font-size:15px;font-weight:600;color:${m.c}">${label}</div><div class="mid" style="margin:2px 0 8px">${num(v)}<span class="u">${m.u}</span></div>${barChart(sp, m.hex, {h:54, spark:true})}</div>`; };
+  h += `<h2><span class="h2l">Activity${infoBtn("rings")}</span></h2><div class="card"><div class="act3">${actCol("move","Move")}${actCol("exercise","Exercise")}${actCol("stand","Stand")}</div><div class="sub" style="margin-top:8px">Today, and the last 7 days</div></div>`;
   // metric tiles
   const tiles = [["steps",7],["distKm",7],["sleep",3],["rhr",7],["hrv",7],["weight",3650]].map(([k, within]) => {
     const l = latest(k, within); if (!l) return ""; const m = METRICS[k];
@@ -994,7 +1015,6 @@ function vMetric({k}){
   const recent = latest(k);
   if (recent) h += `<div class="card"><div class="between"><span class="muted">Latest</span><span class="mid" style="color:${m.c}">${fmtMetric(k, recent.v)}</span></div><div class="sub" style="text-align:right">${fmtDate(recent.k,{day:"numeric",month:"short",year:"numeric"})}</div></div>`;
   if (vals.length) h += `<div class="card"><div class="statgrid"><div><div class="k muted">Lowest</div><div class="mid">${fmtMetric(k, Math.min(...vals))}</div></div><div><div class="k muted">Highest</div><div class="mid">${fmtMetric(k, Math.max(...vals))}</div></div></div></div>`;
-  if (k === "move") { const t = TODAY(), r = ringsFor(t); h += `<div class="card"><div class="sub">Move goal ${num(r.moveGoal)} kcal · Exercise ${num(r.exerciseGoal)} min · Stand ${num(r.standGoal)} hrs. Goals come from your Apple Watch.</div></div>`; }
   if (k === "sleep") { const l = latest("sleep"); if (l) { const sl = S.days[l.k].sleep; h += sleepCard(sl, l.k); } }
   const ty = typical(k); if (ty.lo != null && m.agg === "avg") h += `<div class="card"><div class="between"><span class="muted">Your typical range</span><span class="mid" style="font-size:18px">${fmtPlain(k, ty.lo)} – ${fmtPlain(k, ty.hi)}</span></div><div class="sub">Based on your last 4 weeks</div></div>`;
   if (ABOUT[k]) h += `<h2>About ${esc(m.short || m.n)}</h2><div class="card"><div style="font-size:15px;line-height:1.5;color:rgba(235,235,245,.85)">${ABOUT[k]}</div></div>`;
@@ -1039,6 +1059,7 @@ function vGym(){
   const since = addDays(t, -27), by = {};
   for (const s of setsList().filter(s => s.date >= since)) by[groupOf(s.ex)] = (by[groupOf(s.ex)]||0) + 1;
   const mxg = Math.max(1, ...Object.values(by));
+  h += gymCalendar();
   h += `<h2>Muscle Groups <small style="color:var(--label2)">4 weeks</small></h2><div class="card">${Object.keys(GROUP_COLORS).filter(g => by[g]).sort((a,b)=>by[b]-by[a]).map(g =>
     `<div class="zone" style="grid-template-columns:96px 1fr 40px"><div style="color:${GROUP_COLORS[g]};font-weight:600">${esc(g)}</div><div class="bar"><i style="width:${by[g]/mxg*100}%;background:${GROUP_COLORS[g]}"></i></div><div style="text-align:right;font-family:var(--round);font-weight:600">${by[g]}</div></div>`).join("") || `<div class="empty">No sets in the last 4 weeks</div>`}</div>`;
   // personal bests
@@ -1051,6 +1072,29 @@ function vGym(){
     <div style="text-align:right"><div class="mid" style="font-size:17px">${b.kind==="kg" ? `${num(b.s.kg,1)}<span class="u">kg</span> × ${b.s.reps}` : b.kind==="s" ? `${num(b.s.reps)}<span class="u">s</span>` : `${num(b.s.reps)}<span class="u">reps</span>`}</div><div class="sub">best set</div></div></div>`).join("")}</div>`;
   h += `<h2>Sessions</h2>` + ss.slice(0, 30).map(sessionCard).join("");
   return h;
+}
+function gymCalendar(){
+  const m = R.gMonth || TODAY().slice(0, 7), [Y, M] = m.split("-").map(Number), first = new Date(Y, M-1, 1), dim = new Date(Y, M, 0).getDate(), lead = (first.getDay() + 6) % 7;
+  const by = {}; for (const st of setsList()) (by[st.date] ||= []).push(st);
+  const sel = R.gDay || (by[TODAY()] ? TODAY() : Object.keys(by).sort().pop() || TODAY());
+  let cells = ""; for (let i = 0; i < lead; i++) cells += "<div></div>";
+  let nDays = 0, nSets = 0;
+  for (let d = 1; d <= dim; d++) { const k = `${m}-${String(d).padStart(2, "0")}`, sets = by[k] || [], fut = k > TODAY();
+    if (sets.length) { nDays++; nSets += sets.length; }
+    const groups = [...new Set(sets.map(x => groupOf(x.ex)))].slice(0, 4);
+    cells += `<button class="wday ${k === sel ? "on" : ""}" ${fut ? "disabled" : ""} aria-label="${fmtDate(k)}: ${sets.length} sets" onclick="R.gDay='${k}';render()"><span style="${sets.length ? "color:#30d158" : ""}">${d}</span>
+      <span class="gdots">${groups.length ? groups.map(g => `<i style="background:${GROUP_COLORS[g]}"></i>`).join("") : `<i style="background:#2c2c2e"></i>`}</span></button>`; }
+  const prevM = dkey(new Date(Y, M-2, 1)).slice(0, 7), nextM = dkey(new Date(Y, M, 1)).slice(0, 7), noNext = nextM > TODAY().slice(0, 7);
+  const sets = (by[sel] || []).sort((a, b) => (a.time||"").localeCompare(b.time||"") || a.id.localeCompare(b.id));
+  const ex = []; const idx = {}; for (const st of sets) { if (!(st.ex in idx)) { idx[st.ex] = ex.length; ex.push({ex:st.ex, sets:[]}); } ex[idx[st.ex]].sets.push(st); }
+  const summary = list => { const same = list.every(x => x.reps === list[0].reps && x.kg === list[0].kg);
+    return list.length === 1 ? setLabel(list[0]) : same ? `${list.length} sets · ${setLabel(list[0])}` : list.map(setLabel).join(", "); };
+  return `<h2>Calendar</h2><div class="card"><div class="between" style="margin-bottom:10px"><button class="back" aria-label="Previous month" style="font-size:24px;padding:0 8px" onclick="R.gMonth='${prevM}';render()">‹</button>
+    <b>${first.toLocaleDateString("en-GB", {month:"long", year:"numeric"})}</b><button class="back" aria-label="Next month" style="font-size:24px;padding:0 8px;${noNext ? "opacity:.25;pointer-events:none" : ""}" onclick="R.gMonth='${nextM}';render()">›</button></div>
+    <div class="wcal">${["M","T","W","T","F","S","S"].map(x => `<div class="sub" style="text-align:center;font-weight:600">${x}</div>`).join("")}${cells}</div>
+    <div class="sub" style="margin-top:10px">${nDays ? `${nDays} training day${nDays > 1 ? "s" : ""} and ${nSets} sets this month · dots show the muscle groups` : "No sets logged this month yet"}</div>
+    <div style="border-top:.5px solid var(--sep);margin-top:10px;padding-top:10px"><div class="between"><b>${relDay(sel)}</b>${sets.length ? `<button class="sub" style="color:var(--blue)" onclick="go({t:'session',date:'${sel}'})">Open session ›</button>` : ""}</div>
+    ${ex.length ? ex.map(e => `<div class="setrow tap" onclick="go({t:'exercise',ex:${esc(JSON.stringify(e.ex))}})"><span><i style="display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:8px;background:${GROUP_COLORS[groupOf(e.ex)]}"></i>${esc(e.ex)}</span><b style="font-family:var(--round);text-align:right">${summary(e.sets)}</b></div>`).join("") : `<div class="sub" style="margin-top:4px">Rest day, or nothing logged</div>`}</div></div>`;
 }
 function setLabel(s){ return TIMED.has(s.ex) ? `${num(s.reps)} s` : s.kg ? `${num(s.reps)} × ${num(s.kg,s.kg%1?1:0)} kg` : `${num(s.reps)} reps`; }
 function vSession({date}){
