@@ -5,6 +5,9 @@ Numbering is MAJOR.MINOR.PATCH:
 - **MINOR**: new screens or features.
 - **PATCH**: fixes and small visual tweaks.
 
+## 1.2.1 (8 Nov 2026)
+- Clearer Gym screen when no sets are in Biom yet, with a button to import your Watch gym log.
+
 ## 1.2.0 (8 Nov 2026)
 - Biom checks for a new version each time you open it and offers a one-tap update, including from the Home Screen.
 

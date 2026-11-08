@@ -145,12 +145,13 @@ h2 .info{margin-left:8px}
    Biom: a personal health and training dashboard.
    All data lives on this device (IndexedDB). Nothing is sent anywhere.
    ============================================================ */
-const APP_VERSION = "1.2.0";
+const APP_VERSION = "1.2.1";
 /* Versions: MAJOR.MINOR.PATCH
    MAJOR = big redesign or a change in how data is stored (may need a re-import)
    MINOR = new screens or features
    PATCH = fixes and small visual tweaks */
 const CHANGELOG = [
+  {v:"1.2.1", d:"8 Nov 2026", items:["Clearer Gym screen when no sets are in Biom yet, with a button to import your Watch gym log."]},
   {v:"1.2.0", d:"8 Nov 2026", items:["Biom checks for a new version each time you open it and offers a one-tap update, including from the Home Screen."]},
   {v:"1.1.2", d:"8 Nov 2026", items:["Version number on every screen. Tap it to see what's new."]},
   {v:"1.1.1", d:"8 Nov 2026", items:["Biom logo on the welcome screen and in About.","New app icon and browser icon."]},
@@ -892,7 +893,10 @@ function vGym(){
   let h = topBar("Strength training", "Gym");
   const ss = sessions();
   h += `<button class="btn primary" style="margin:0 0 6px" onclick="go({t:'addset'})">+ Add a set manually</button>`;
-  if (!ss.length) return h + `<div class="card empty">No sets yet.<br>Log sets from your Apple Watch with the “Log set” shortcut, then tap Sync.</div>`;
+  if (!ss.length) return h + `<div class="card" style="text-align:center;padding:20px 16px">${iconBubble("strength",56).replace('class="wicon"','class="wicon" style="margin:0 auto 12px;width:56px;height:56px;background:#30d15826;color:#30d158"')}
+    <div style="font-size:17px;font-weight:600;margin-bottom:6px">No sets in Biom yet</div>
+    <div class="sub" style="font-size:15px;line-height:1.45">Sets you log with “Log set” on your Apple Watch are saved in <b>gymlog.txt</b> (iCloud Drive › Shortcuts). The Sync shortcut will bring them in automatically. Until it's set up, import the file here. Sets already in Biom are skipped, so you can import it as often as you like.</div>
+    <button class="btn primary" style="background:#30d158" onclick="$('#file').click()">Import gymlog.txt</button></div>`;
   // weekly volume, last 8 weeks
   const t = TODAY(), monday = addDays(t, -((pday(t).getDay()+6)%7));
   const weeks = []; for (let i = 7; i >= 0; i--) { const ws = addDays(monday, -7*i), we = addDays(ws, 6);
