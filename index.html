@@ -96,6 +96,11 @@ table.splits td{padding:8px 0;border-top:.5px solid var(--sep);font-family:var(-
 .week{display:flex;justify-content:space-between;margin-top:12px}
 .week div{text-align:center;font-size:11px;color:var(--label2);font-weight:600}
 .banner{background:var(--card2);border-radius:12px;padding:12px 14px;font-size:14px;margin-bottom:10px;display:flex;gap:10px;align-items:center}
+.update{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--safe-b) + 76px);z-index:25;width:min(608px, calc(100% - 32px));
+  background:rgba(44,44,46,.96);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.update img{width:30px;height:auto;flex:none}
+.update .go{background:var(--blue);color:#fff;font-weight:600;font-size:15px;padding:7px 14px;border-radius:999px;flex:none}
+.update .x{color:var(--label3);font-size:20px;line-height:1;padding:0 2px}
 .ver{font-family:var(--round);font-size:11px;font-weight:600;color:#48484a;letter-spacing:.02em;padding:2px 0}
 .info{display:inline-grid;place-items:center;width:22px;height:22px;color:var(--blue);vertical-align:middle;margin-left:6px;flex:none}
 .info svg{width:20px;height:20px}
@@ -140,12 +145,13 @@ h2 .info{margin-left:8px}
    Biom: a personal health and training dashboard.
    All data lives on this device (IndexedDB). Nothing is sent anywhere.
    ============================================================ */
-const APP_VERSION = "1.1.2";
+const APP_VERSION = "1.2.0";
 /* Versions: MAJOR.MINOR.PATCH
    MAJOR = big redesign or a change in how data is stored (may need a re-import)
    MINOR = new screens or features
    PATCH = fixes and small visual tweaks */
 const CHANGELOG = [
+  {v:"1.2.0", d:"8 Nov 2026", items:["Biom checks for a new version each time you open it and offers a one-tap update, including from the Home Screen."]},
   {v:"1.1.2", d:"8 Nov 2026", items:["Version number on every screen. Tap it to see what's new."]},
   {v:"1.1.1", d:"8 Nov 2026", items:["Biom logo on the welcome screen and in About.","New app icon and browser icon."]},
   {v:"1.1.0", d:"8 Nov 2026", items:["Overnight Vitals: sleep, heart and breathing against your typical ranges.","Highlights that cross sleep, activity, heart and workouts.","Training Load in Workouts.","In Context on each workout: share of your Move ring and how you recovered.","ⓘ explanations on every section, and plain-language chart ranges."]},
@@ -1021,6 +1027,31 @@ function vSettings(){
 async function pasteImport(){ try { const t = await navigator.clipboard.readText(); toast(importText(t, "Pasted")); render(); } catch(e) { toast("Couldn't read the clipboard: " + esc(e.message)); } }
 async function wipe(){ if (!confirm("Delete all data stored in Biom on this device? Make a backup first if you want to keep it.")) return; S = blankState(); await dbSet("state", S); R.stack = []; render(); toast("All data deleted"); }
 
+/* ============================================================ updates
+   version.json on GitHub holds the latest version. The app checks it on launch and whenever it comes back
+   to the foreground (a Home Screen app is usually resumed, not reloaded), bypassing every cache. */
+function newer(a, b){ const x = a.split(".").map(Number), y = b.split(".").map(Number); for (let i = 0; i < 3; i++) { if ((x[i]||0) !== (y[i]||0)) return (x[i]||0) > (y[i]||0); } return false; }
+let lastCheck = 0, dismissed = null;
+async function checkUpdate(){
+  if (PREVIEW || location.protocol === "file:" || Date.now() - lastCheck < 60e3) return; lastCheck = Date.now();
+  try {
+    const r = await fetch("version.json?t=" + Date.now(), {cache:"no-store"}); if (!r.ok) return;
+    const {version, notes} = await r.json();
+    if (version && newer(version, APP_VERSION) && dismissed !== version) showUpdate(version, notes);
+  } catch(e) { /* offline: try again next time */ }
+}
+function showUpdate(v, notes){
+  document.querySelector(".update")?.remove();
+  const el = document.createElement("div"); el.className = "update"; el.setAttribute("role", "status");
+  el.innerHTML = `<img src="${LOGO}" alt=""><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:15px">Biom ${esc(v)} is available</div><div class="sub" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(notes || "Tap Update to get the latest version.")}</div></div><button class="go">Update</button><button class="x" aria-label="Later">×</button>`;
+  el.querySelector(".go").onclick = () => applyUpdate(v);
+  el.querySelector(".x").onclick = () => { dismissed = v; el.remove(); };
+  document.body.appendChild(el);
+}
+function applyUpdate(v){ toast("Updating…", 1500); location.replace(location.pathname + "?v=" + encodeURIComponent(v)); }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkUpdate(); });
+window.addEventListener("pageshow", e => { if (e.persisted) checkUpdate(); });
+
 /* ============================================================ start */
 $("#file").addEventListener("change", e => { handleFiles([...e.target.files]); e.target.value = ""; });
 window.addEventListener("hashchange", () => { if (handleHash()) render(); });
@@ -1029,6 +1060,7 @@ window.addEventListener("hashchange", () => { if (handleHash()) render(); });
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
   handleHash();
   render();
+  checkUpdate();
 })();
 </script>
 </body>

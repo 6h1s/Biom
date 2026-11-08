@@ -5,6 +5,9 @@ Numbering is MAJOR.MINOR.PATCH:
 - **MINOR**: new screens or features.
 - **PATCH**: fixes and small visual tweaks.
 
+## 1.2.0 (8 Nov 2026)
+- Biom checks for a new version each time you open it and offers a one-tap update, including from the Home Screen.
+
 ## 1.1.2 (8 Nov 2026)
 - Version number on every screen. Tap it to see what's new.
 
