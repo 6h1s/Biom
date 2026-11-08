@@ -1,0 +1,30 @@
+name: Sign shortcuts
+on:
+  push:
+    branches: [shortcut-build]
+    paths: ["shortcuts/src/**", ".github/workflows/sign-shortcuts.yml"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sign:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sign every shortcut
+        run: |
+          mkdir -p shortcuts/signed
+          sw_vers > shortcuts/signed/log.txt 2>&1
+          for f in shortcuts/src/*.shortcut; do
+            n=$(basename "$f")
+            echo "== $n" >> shortcuts/signed/log.txt
+            shortcuts sign --mode anyone --input "$f" --output "shortcuts/signed/$n" >> shortcuts/signed/log.txt 2>&1 || echo "FAILED $?" >> shortcuts/signed/log.txt
+          done
+          ls -la shortcuts/signed >> shortcuts/signed/log.txt
+      - name: Save results
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add shortcuts/signed
+          git commit -m "Signed shortcuts [skip ci]" || true
+          git push
