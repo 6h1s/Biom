@@ -167,8 +167,12 @@ async function dbSet(k, v){ const db = await idb(); return new Promise((res, rej
 
 function blankState(){ return { profile:{}, settings:{}, days:{}, workouts:{}, sets:{}, deletedSets:{}, meta:{created:new Date().toISOString()} }; }
 let S = blankState();
-async function load(){ const v = await dbGet("state"); if (v && v.days) S = Object.assign(blankState(), v); }
-let saveTimer; function save(){ clearTimeout(saveTimer); saveTimer = setTimeout(() => dbSet("state", S).catch(e => toast("Could not save: " + e.message)), 150); }
+/* Preview mode: a review copy with data baked in, kept in memory only (never saved) */
+const PREVIEW = window.BIOM_PREVIEW || null;
+async function load(){
+  if (PREVIEW) { S = blankState(); if (PREVIEW.baseline) importJSON(PREVIEW.baseline); if (PREVIEW.gymlog) importGymlog(PREVIEW.gymlog); S.meta.lastBackup = new Date().toISOString(); return; }
+  const v = await dbGet("state"); if (v && v.days) S = Object.assign(blankState(), v); }
+let saveTimer; function save(){ if (PREVIEW) return; clearTimeout(saveTimer); saveTimer = setTimeout(() => dbSet("state", S).catch(e => toast("Could not save: " + e.message)), 150); }
 
 /* ============================================================ helpers */
 const $ = s => document.querySelector(s);
@@ -321,7 +325,7 @@ function handleHash(){
   const h = location.hash; if (!h || h.length < 3) return false;
   const m = h.match(/^#(sync|import)=(.*)$/s); if (!m) return false;
   let payload = m[2]; try { payload = decodeURIComponent(payload); } catch(e) {}
-  history.replaceState(null, "", location.pathname + location.search);
+  try { history.replaceState(null, "", location.pathname + location.search); } catch(e) {}
   try { const msg = importText(payload, "Synced"); S.meta.lastSync = new Date().toISOString(); save(); setTimeout(()=>toast(msg), 300); }
   catch(e) { setTimeout(()=>toast("Sync failed: " + esc(e.message), 4000), 300); }
   return true;
@@ -338,13 +342,13 @@ function backup(){
 function niceMax(v){ if (!v || v <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))); const n = v/p; return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*p; }
 function axisFmt(v){ return v >= 10000 ? (v/1000).toLocaleString(undefined,{maximumFractionDigits:0})+"k" : v >= 1000 ? (v/1000).toLocaleString(undefined,{maximumFractionDigits:1})+"k" : num(v, v<10 && v%1 ? 1 : 0); }
 /* bar chart: items = [{label, v}] */
-function barChart(items, color, {h=160, avgLine=null, onTap=null, min0=true, goal=null}={}){
-  const W = 340, R = 30, B = 18, T = 8, iw = W - R, ih = h - B - T;
+function barChart(items, color, {h=160, avgLine=null, onTap=null, min0=true, goal=null, spark=false}={}){
+  const W = 340, R = spark ? 0 : 30, B = spark ? 1 : 18, T = spark ? 1 : 8, iw = W - R, ih = h - B - T;
   const vals = items.map(i => i.v).filter(v => v != null);
   const mx = niceMax(Math.max(...vals, goal||0, 0) * 1.05);
   const n = items.length, bw = iw / n, barW = Math.max(2, Math.min(22, bw * 0.62));
   let g = "";
-  for (let i = 0; i <= 2; i++) { const y = T + ih - ih * i / 2; g += `<line x1="0" x2="${iw}" y1="${y}" y2="${y}" stroke="rgba(235,235,245,.12)" stroke-dasharray="${i?"2 3":""}"/><text x="${W-2}" y="${y+3}" text-anchor="end">${axisFmt(mx*i/2)}</text>`; }
+  if (!spark) for (let i = 0; i <= 2; i++) { const y = T + ih - ih * i / 2; g += `<line x1="0" x2="${iw}" y1="${y}" y2="${y}" stroke="rgba(235,235,245,.12)" stroke-dasharray="${i?"2 3":""}"/><text x="${W-2}" y="${y+3}" text-anchor="end">${axisFmt(mx*i/2)}</text>`; }
   if (goal) { const y = T + ih - ih*goal/mx; g += `<line x1="0" x2="${iw}" y1="${y}" y2="${y}" stroke="${color}" stroke-opacity=".5" stroke-dasharray="4 3"/>`; }
   const every = Math.ceil(n / 7);
   items.forEach((it, i) => {
@@ -429,8 +433,8 @@ function iconBubble(t, size=44){ const c = (WT[t]||WT.other).c; return `<div cla
 
 /* ============================================================ navigation */
 let R = { tab:"summary", stack:[], range:{} };
-function go(detail){ R.stack.push(detail); history.pushState({d:R.stack.length}, ""); render(); window.scrollTo(0,0); }
-function back(){ if (R.stack.length) history.back(); }
+function go(detail){ R.stack.push(detail); if (!PREVIEW) { try { history.pushState({d:R.stack.length}, ""); } catch(e) { R.noHist = true; } } render(); window.scrollTo(0,0); }
+function back(){ if (!R.stack.length) return; if (PREVIEW || R.noHist) { R.stack.pop(); render(); window.scrollTo(0,0); } else history.back(); }
 window.addEventListener("popstate", () => { if (R.stack.length) { R.stack.pop(); render(); } });
 function setTab(t){ R.tab = t; R.stack = []; render(); window.scrollTo(0,0); }
 function navBar(title){ const prev = R.stack.length > 1 ? "Back" : ({summary:"Summary",workouts:"Workouts",gym:"Gym",health:"Health"})[R.tab];
@@ -528,7 +532,7 @@ function vSummary(){
     const sp = series(k, 7).map(x => ({v:x.v}));
     return `<div class="card tap" onclick="go({t:'metric',k:'${k}'})"><div class="ct"><span style="color:${m.c}">${esc(m.short||m.n)}</span><span class="chev">›</span></div>
       <div class="big" style="margin-top:6px">${fmtMetric(k, l.v)}</div><div class="sub">${relDay(l.k)}</div>
-      ${m.agg==="sum" ? `<div style="margin-top:8px">${barChart(sp, m.hex, {h:46})}</div>` : ""}</div>`;
+      ${m.agg==="sum" ? `<div style="margin-top:10px">${barChart(sp, m.hex, {h:70, spark:true})}</div>` : ""}</div>`;
   }).join("");
   if (tiles) h += `<h2>Highlights</h2><div class="grid2">${tiles}</div>`;
   // latest workout and gym session
