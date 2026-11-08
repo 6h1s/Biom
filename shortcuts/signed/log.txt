@@ -1,0 +1,10 @@
+ProductName:		macOS
+ProductVersion:		26.7.2
+BuildVersion:		25G332
+== Test.shortcut
+Error: In order to do this, you must be signed into iCloud.
+FAILED 1
+total 8
+drwxr-xr-x  3 runner  staff   96 Nov  8 22:37 .
+drwxr-xr-x  4 runner  staff  128 Nov  8 22:37 ..
+-rw-r--r--  1 runner  staff  152 Nov  8 22:37 log.txt
