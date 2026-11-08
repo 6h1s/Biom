@@ -96,6 +96,36 @@ table.splits td{padding:8px 0;border-top:.5px solid var(--sep);font-family:var(-
 .week{display:flex;justify-content:space-between;margin-top:12px}
 .week div{text-align:center;font-size:11px;color:var(--label2);font-weight:600}
 .banner{background:var(--card2);border-radius:12px;padding:12px 14px;font-size:14px;margin-bottom:10px;display:flex;gap:10px;align-items:center}
+.info{display:inline-grid;place-items:center;width:22px;height:22px;color:var(--blue);vertical-align:middle;margin-left:6px;flex:none}
+.info svg{width:20px;height:20px}
+h2 .info{margin-left:8px}
+.h2l{display:flex;align-items:center}
+.rangecap{margin:-6px 2px 12px;line-height:1.4}
+.vrow{padding:9px 0;border-top:.5px solid var(--sep)}
+.vbar{position:relative;height:8px;margin:9px 0 5px;background:var(--card2);border-radius:4px}
+.vbar .rng{position:absolute;top:0;bottom:0;background:#636366;border-radius:4px}
+.vbar .dot{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;transform:translate(-50%,-50%);border:2.5px solid var(--card)}
+.hb{margin-top:12px}
+.hb .track{height:22px;border-radius:6px;margin:4px 0 3px}
+.dots{display:inline-flex;gap:3px;margin-right:6px;vertical-align:1px}
+.dots i{width:8px;height:8px;border-radius:50%}
+.ctx{padding:10px 0;border-bottom:.5px solid var(--sep)}
+.ctx:last-child{border-bottom:0}
+.ci{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;flex:none}
+.ci svg{width:20px;height:20px}
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:30;display:flex;align-items:flex-end;justify-content:center;animation:fade .2s}
+.sheet{background:#1c1c1e;width:100%;max-width:640px;max-height:82vh;overflow:auto;border-radius:14px 14px 0 0;padding:8px 20px calc(var(--safe-b) + 24px);animation:up .28s cubic-bezier(.2,.8,.2,1)}
+.sheet .grab{width:36px;height:5px;border-radius:3px;background:#48484a;margin:0 auto 10px}
+.sheet h3{font-size:20px;font-weight:700;margin:6px 0}
+.sheet .done{color:var(--blue);font-weight:600}
+.sheet-body{font-size:15px;line-height:1.5;color:rgba(235,235,245,.85)}
+.sheet-body p{margin:10px 0}
+.sheet-body dl{margin:10px 0}
+.sheet-body dt{font-weight:600;color:#fff;margin-top:10px}
+.sheet-body dd{margin:2px 0 0}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet,.sheet-bg{animation:none}}
 @media (min-width:700px){ #app{padding-top:24px} }
 </style>
 </head>
@@ -109,7 +139,7 @@ table.splits td{padding:8px 0;border-top:.5px solid var(--sep);font-family:var(-
    Biom: a personal health and training dashboard.
    All data lives on this device (IndexedDB). Nothing is sent anywhere.
    ============================================================ */
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.1.0";
 const SHORTCUT_NAME = "Sync";
 
 /* ---------- exercise catalogue (names match the "Log set" Watch shortcut) ---------- */
@@ -158,6 +188,7 @@ const METRICS = {
   daylightMin:{n:"Time in Daylight", u:"min", c:"var(--time)", hex:"#ffd60a", agg:"sum", get:d=>d.daylightMin},
 };
 
+const ABOUT = {"move": "Active energy is the calories you burn by moving, on top of what your body burns at rest. Your Move ring closes when you reach the daily goal set on your Apple Watch.", "exercise": "Minutes of activity at the intensity of a brisk walk or more, measured by your Apple Watch from your heart rate and movement.", "steps": "Counted by your iPhone and your Apple Watch. When both count at the same time, Biom keeps the Watch's count so steps aren't counted twice.", "distKm": "Distance covered on foot, walking or running, estimated from your steps and stride length, and from GPS during outdoor workouts.", "flights": "One flight is about 3 metres of climbing, detected by the barometer in your iPhone and Apple Watch.", "sleep": "Time actually asleep, not just in bed, detected by your Apple Watch. <b>Core</b> is light sleep, <b>Deep</b> is the most restorative for the body, <b>REM</b> is when you dream and consolidate memories, and <b>Awake</b> counts short wake-ups, which are normal. Most adults need 7 to 9 hours.", "rhr": "Your heart rate at rest, measured by your Watch during calm moments. A lower value usually reflects better cardiovascular fitness. Illness, stress, alcohol or a hard training block can raise it for a few days.", "hrv": "The variation in time between heartbeats, measured at night and at rest (SDNN, in milliseconds). Higher usually means your body is well recovered. It varies a lot between people, so compare it with your own typical range, not with others.", "walkHr": "Your average heart rate while walking during the day. It tends to go down as your fitness improves.", "vo2": "The maximum amount of oxygen your body can use during exercise, estimated by your Watch during outdoor walks, runs and hikes. It is one of the best overall indicators of cardiovascular fitness.", "respRate": "Breaths per minute, measured while you sleep. It is usually very stable; a rise can be an early sign of illness.", "weight": "From the Health app, a smart scale or your own entries. Day-to-day changes are mostly water, so look at the trend over several weeks.", "walkSpeed": "Your usual walking speed on flat ground, measured by your iPhone as you walk. It is a good long-term indicator of mobility.", "stepLenCm": "The average length of one step while walking, measured by your iPhone.", "daylightMin": "Time spent outdoors in daylight, measured by the light sensor in your Apple Watch."};
 /* ============================================================ storage */
 const DB_NAME = "pulse", STORE = "kv";
 function idb(){ return new Promise((res, rej) => { const r = indexedDB.open(DB_NAME, 1);
@@ -423,6 +454,9 @@ const IC = {
   gym:`<svg viewBox="0 0 28 28" fill="currentColor"><rect x="2" y="11" width="3" height="6" rx="1"/><rect x="5" y="7.5" width="4" height="13" rx="1.2"/><rect x="9" y="12.6" width="10" height="2.8" rx="1"/><rect x="19" y="7.5" width="4" height="13" rx="1.2"/><rect x="23" y="11" width="3" height="6" rx="1"/></svg>`,
   health:`<svg viewBox="0 0 28 28" fill="currentColor"><path d="M14 24.5S3 17.8 3 10.4C3 7 5.6 4.5 8.7 4.5c2.2 0 4.1 1.2 5.3 3 1.2-1.8 3.1-3 5.3-3 3.1 0 5.7 2.5 5.7 5.9 0 7.4-11 14.1-11 14.1z"/></svg>`,
   gear:`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
+  info:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 11v6" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor" stroke="none"/></svg>`,
+  moon:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 15.3A8.5 8.5 0 0 1 8.7 4a8.5 8.5 0 1 0 11.3 11.3z"/></svg>`,
+  heart:`<svg viewBox="0 0 28 28" fill="currentColor"><path d="M14 24.5S3 17.8 3 10.4C3 7 5.6 4.5 8.7 4.5c2.2 0 4.1 1.2 5.3 3 1.2-1.8 3.1-3 5.3-3 3.1 0 5.7 2.5 5.7 5.9 0 7.4-11 14.1-11 14.1z"/></svg>`,
   sync:`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.3L3 16M3 12a9 9 0 0 1 15.5-6.3L21 8M21 3v5h-5M3 21v-5h5"/></svg>`,
   walk:`<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="13.5" cy="3.5" r="2"/><path d="M10 8l3-1c.8-.2 1.5.2 1.8.9l1.4 3.2 2.6 1.1-.7 1.6-3.2-1.3-.6-1.4-1 3.3 2.3 2.4V22h-1.8v-4.6L11.6 15l-1.2 3.8L7 22l-1.3-1.3 3-3 2.2-7.3-1.4.5-1.3 2.9-1.6-.8L8.4 9z"/></svg>`,
   run:`<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="15" cy="3.5" r="2"/><path d="M9.6 7.8l3.6-1.3c.7-.2 1.4 0 1.8.6l1.8 2.9 2.9 1.2-.7 1.6-3.4-1.4-.9-1.4-1.2 3.6 2.6 2.4v5.8h-1.8v-5l-3.1-2.5-1.3 3.8-5 2.9-.9-1.6 4.3-2.5 2.4-7.4-1.5.5-1.6 3-1.6-.8 2-3.9z"/></svg>`,
@@ -482,13 +516,168 @@ function hrZones(w){
 }
 const ZONE_C = ["#5ac8fa","#30d158","#c8e600","#ff9f0a","#ff375f"];
 
+
+/* ============================================================ info sheets */
+const ZONE_C_INFO = ["#5ac8fa","#30d158","#c8e600","#ff9f0a","#ff375f"];
+const RANGE_INFO = {
+  W:  {n:"Week", d:"Your last 7 days, one bar per day."},
+  M:  {n:"Month", d:"Your last 30 days, one bar per day."},
+  "6M":{n:"6 Months", d:"The last 26 weeks. Each bar is one week, showing your daily average that week."},
+  Y:  {n:"Year", d:"The last 12 months. Each bar is one month, showing your daily average that month."},
+  All:{n:"All Time", d:"Every year since your data began. Each bar is one year, showing your daily average that year."},
+};
+const INFO = {
+  ranges:{t:"Chart Ranges", b:`<dl>${Object.entries(RANGE_INFO).map(([k,v])=>`<dt>${k} · ${v.n}</dt><dd>${v.d}</dd>`).join("")}</dl><p>The dashed white line is the average for the whole period. Tap any bar to see its exact value.</p>`},
+  rings:{t:"Activity Rings", b:`<dl><dt style="color:var(--move)">Move</dt><dd>Active calories burned by moving.</dd><dt style="color:var(--exercise)">Exercise</dt><dd>Minutes of activity at the level of a brisk walk or more.</dd><dt style="color:var(--stand)">Stand</dt><dd>Hours in which you stood and moved for at least one minute.</dd></dl><p>Goals come from your Apple Watch. The small rings show your last 7 days.</p>`},
+  vitals:{t:"Overnight Vitals", b:`<p>Compares last night's resting heart rate, heart rate variability, breathing rate and sleep with <b>your own typical range</b>: the grey band, based on your previous 4 weeks. The dot is last night's value.</p><p>One value outside its range is common and rarely meaningful. Several at once can mean your body is under strain: illness starting, stress, alcohol, a late meal or a hard training day.</p><p>Biom needs 7 nights of data before it can set a typical range. This is not a medical device.</p>`},
+  highlights:{t:"Highlights", b:`<p>Highlights compare your recent data with your own past, and cross different kinds of data, like sleep and activity, to show patterns. The coloured dots show which kinds of data are combined.</p><p>A highlight only appears when there is enough data to compare fairly, for example at least 4 nights in each group. They show patterns, not causes.</p>`},
+  trends:{t:"Trends", b:`<p>Compares your average over the last 7 days with your average over the 4 weeks before.</p><dl><dt>Arrow in colour</dt><dd>Going in a good direction.</dd><dt style="color:#ff9f0a">Orange arrow</dt><dd>Going down compared with your usual.</dd><dt style="color:#8e8e93">Grey arrow</dt><dd>About the same (within 3%).</dd></dl>`},
+  load:{t:"Training Load", b:`<p>Compares the effort of your workouts over the last 7 days with your average over the last 28 days.</p><p>Each workout's effort combines its <b>duration</b> with <b>how hard your heart worked</b>: your average heart rate compared with your resting and maximum heart rate. A long easy walk and a short hard run can count about the same.</p><dl><dt style="color:#30d158">Steady</dt><dd>You're training about as much as usual.</dd><dt style="color:#ff9f0a">Above</dt><dd>A heavier week than usual. Good for building fitness, but plan some rest.</dd><dt style="color:#ff375f">Well Above</dt><dd>Much more than usual. Keeping this up for long raises the risk of injury.</dd><dt style="color:#5ac8fa">Below</dt><dd>Lighter than usual, like a rest or recovery week.</dd></dl><p>Needs about 3 weeks of workouts before it can compare.</p>`},
+  zones:{t:"Heart Rate Zones", b:`<p>Zones are based on your <b>heart-rate reserve</b>: the gap between your resting and maximum heart rate.</p><dl><dt style="color:${ZONE_C_INFO[0]}">Zone 1 · under 60%</dt><dd>Very easy. Warm-up, recovery.</dd><dt style="color:${ZONE_C_INFO[1]}">Zone 2 · 60–70%</dt><dd>Easy, you can hold a conversation. Builds your aerobic base.</dd><dt style="color:${ZONE_C_INFO[2]}">Zone 3 · 70–80%</dt><dd>Moderate, breathing harder. Improves endurance.</dd><dt style="color:${ZONE_C_INFO[3]}">Zone 4 · 80–90%</dt><dd>Hard, a few words at a time. Raises your threshold.</dd><dt style="color:${ZONE_C_INFO[4]}">Zone 5 · over 90%</dt><dd>Maximal effort, only for short bursts.</dd></dl><p>You can set your own maximum and resting heart rate in Settings.</p>`},
+  splits:{t:"Splits", b:`<p>Your time for each full kilometre. Pace is shown as minutes'seconds" per kilometre, so a lower number means faster.</p>`},
+  context:{t:"In Context", b:`<p>Shows what this workout meant for your day, and how your body responded the following night: sleep, heart rate variability and resting heart rate, each compared with your typical range.</p>`},
+  gymvol:{t:"Sets and Volume", b:`<p><b>Volume</b> is weight × reps, added up for all sets. Bodyweight exercises (0 kg) and timed holds don't add volume, but count as sets.</p><p>The best set uses an estimated <b>one-rep max</b> (the heaviest weight you could lift once), so 10 × 40 kg and 5 × 50 kg can be compared.</p>`},
+};
+function infoBtn(topic){ return `<button class="info" aria-label="About" onclick="event.stopPropagation();info('${topic}')">${IC.info}</button>`; }
+function info(topic){
+  const it = INFO[topic] || (METRICS[topic] && {t:"About " + METRICS[topic].n, b:`<p>${ABOUT[topic]||""}</p>`}); if (!it) return;
+  const el = document.createElement("div"); el.className = "sheet-bg";
+  el.innerHTML = `<div class="sheet" role="dialog" aria-label="${esc(it.t)}"><div class="grab"></div><div class="between"><h3>${esc(it.t)}</h3><button class="done">Done</button></div><div class="sheet-body">${it.b}</div></div>`;
+  el.addEventListener("click", e => { if (e.target === el || e.target.classList.contains("done")) el.remove(); });
+  document.body.appendChild(el);
+}
+
+/* ============================================================ insights: crossing data sources */
+const MIN_BAND = {rhr:3, hrv:8, respRate:1, sleep:0.75, walkHr:4};
+function typical(key, endKey=TODAY(), n=28){
+  const v = series(key, n, addDays(endKey, -1)).map(x => x.v).filter(x => x != null);
+  if (v.length < 7) return {n:v.length};
+  const m = avg(v), sd = Math.sqrt(avg(v.map(x => (x-m)**2))), b = Math.max(sd, MIN_BAND[key] || 0);
+  return {n:v.length, mean:m, lo:m-b, hi:m+b};
+}
+function fmtPlain(k, v){ const m = METRICS[k]; return k === "sleep" ? hmPlain(v*60) : `${num(v, m.dp||0)} ${m.u}`; }
+function vitalsCard(){
+  const t = TODAY();
+  const rows = ["rhr","hrv","respRate","sleep"].map(k => {
+    const d = metricVal(k,t) != null ? t : metricVal(k, addDays(t,-1)) != null ? addDays(t,-1) : null; if (!d) return null;
+    const v = metricVal(k,d), ty = typical(k,d); return {k, d, v, ty, out: ty.lo != null && (v < ty.lo || v > ty.hi)};
+  }).filter(Boolean);
+  if (!rows.length) return "";
+  const ready = rows.filter(r => r.ty.lo != null), outs = ready.filter(r => r.out), nights = Math.max(...rows.map(r => r.ty.n));
+  const [status, col] = !ready.length ? [`Learning your typical ranges · ${Math.min(nights+1,7)} of 7 nights`, "var(--label2)"]
+    : !outs.length ? ["All in your typical range", "#30d158"] : [`${outs.length} outside your typical range`, "#ff9f0a"];
+  return `<div class="card"><div class="between"><div class="ct">Overnight Vitals${infoBtn("vitals")}</div><span class="sub">${relDay(rows[0].d)}</span></div>
+    <div style="font-size:15px;font-weight:600;color:${col};margin:2px 0 4px">${status}</div>${rows.map(vitalRow).join("")}</div>`;
+}
+function vitalRow(r){
+  const m = METRICS[r.k], {lo, hi} = r.ty; let bar;
+  if (lo != null) { const a = Math.min(lo, r.v), b = Math.max(hi, r.v), pad = (b-a)*0.18 || 1, A = a-pad, B = b+pad, X = v => (v-A)/(B-A)*100;
+    bar = `<div class="vbar"><i class="rng" style="left:${X(lo).toFixed(1)}%;width:${(X(hi)-X(lo)).toFixed(1)}%"></i><i class="dot" style="left:${X(r.v).toFixed(1)}%;background:${r.out?"#ff9f0a":m.hex}"></i></div>`; }
+  else bar = "";
+  return `<div class="vrow tap" onclick="go({t:'metric',k:'${r.k}'})"><div class="between"><span style="font-size:15px">${esc(m.short||m.n)}</span><span class="mid" style="font-size:18px;color:${r.out?"#ff9f0a":m.c}">${fmtMetric(r.k, r.v)}</span></div>
+    ${bar}${lo != null ? `<div class="sub" style="font-size:12px">Typical ${fmtPlain(r.k, lo)} – ${fmtPlain(r.k, hi)}</div>` : ""}</div>`;
+}
+/* Training load: effort = duration × heart-rate intensity (TRIMP), 7-day vs 28-day */
+function workoutLoad(w){ const dur = w.durationMin || 0; if (!w.avgHr) return dur * 0.4;
+  const r = Math.max(0, Math.min(1, (w.avgHr - restHr()) / Math.max(1, maxHr() - restHr()))); return dur * r * 0.64 * Math.exp(1.92 * r); }
+function trainingLoad(){
+  const by = {}; let first = null;
+  for (const w of Object.values(S.workouts)) { const k = dkey(new Date(w.start)); by[k] = (by[k]||0) + workoutLoad(w); if (!first || k < first) first = k; }
+  const days = []; for (let i = 27; i >= 0; i--) { const k = addDays(TODAY(), -i); days.push({k, v: by[k] || 0}); }
+  const acute = sum(days.slice(-7).map(d => d.v)) / 7, chronic = sum(days.map(d => d.v)) / 28;
+  const enough = first && (pday(TODAY()) - pday(first)) / 864e5 >= 21 && chronic > 0, ratio = chronic ? acute / chronic : null;
+  const st = !enough ? null : ratio < 0.6 ? ["Well Below","#64d2ff"] : ratio < 0.8 ? ["Below","#5ac8fa"] : ratio <= 1.3 ? ["Steady","#30d158"] : ratio <= 1.5 ? ["Above","#ff9f0a"] : ["Well Above","#ff375f"];
+  return {days, acute, chronic, ratio, st, first};
+}
+function loadCard(){
+  const L = trainingLoad(); if (!L.first) return "";
+  const daysLeft = Math.max(0, 21 - Math.round((pday(TODAY()) - pday(L.first)) / 864e5));
+  return `<h2><span class="h2l">Training Load${infoBtn("load")}</span></h2><div class="card">
+    ${L.st ? `<div class="big" style="color:${L.st[1]}">${L.st[0]}</div><div class="sub">Last 7 days vs your 4-week average</div>`
+      : `<div class="mid" style="color:var(--label)">Getting to know you</div><div class="sub">Keep recording workouts. Biom can compare your load in about ${daysLeft} day${daysLeft===1?"":"s"}.</div>`}
+    <div style="margin-top:12px">${barChart(L.days.map((d,i) => ({label: i%7===0 ? pday(d.k).toLocaleDateString("en-GB",{day:"numeric",month:"short"}) : "", v: d.v})), "#a6ff00", {h:110, avgLine: L.chronic || null})}</div>
+    <div class="sub">Daily effort, last 28 days${L.chronic ? " · dashed line: 28-day average" : ""}</div></div>`;
+}
+/* Highlights: compare periods and cross data sources (Apple Health style) */
+function highlights(){
+  const H = [], t = TODAY(), SL = METRICS.sleep.hex, AC = METRICS.steps.hex, HR = METRICS.rhr.hex, WK = "#a6ff00";
+  const days90 = []; for (let i = 1; i <= 90; i++) days90.push(addDays(t, -i));
+  const wdays = new Set([...Object.values(S.workouts).map(w => dkey(new Date(w.start))), ...setsList().map(s => s.date)]);
+  const split = (keys, pick, test) => { const a = [], b = []; for (const k of keys) { const v = pick(k); if (v == null) continue; (test(k) ? a : b).push(v); } return [a, b]; };
+  // sleep -> activity the same day
+  let [g, s] = split(days90, k => metricVal("sleep", k) != null ? metricVal("steps", k) : null, k => metricVal("sleep", k) >= 7);
+  if (g.length >= 4 && s.length >= 4) { const A = avg(g), B = avg(s);
+    H.push({dots:[SL, AC], cat:"Sleep · Activity", text:`After nights of 7 hours or more, you take ${A > B ? "more" : "fewer"} steps during the day.`,
+      bars:[{l:"After 7 h+ of sleep", v:A, u:"steps/day", c:AC}, {l:"After shorter nights", v:B, u:"steps/day", c:"#636366"}]}); }
+  // workout days -> that night's sleep
+  [g, s] = split(days90, k => metricVal("sleep", addDays(k, 1)), k => wdays.has(k));
+  if (g.length >= 3 && s.length >= 3) { const A = avg(g), B = avg(s);
+    H.push({dots:[WK, SL], cat:"Workouts · Sleep", text:`On nights after a workout, you sleep ${Math.abs(A-B) < 0.15 ? "about the same as" : A > B ? "longer than" : "less than"} on rest days.`,
+      bars:[{l:"After workout days", v:A, fmt:hmPlain(A*60), c:SL}, {l:"After rest days", v:B, fmt:hmPlain(B*60), c:"#636366"}]}); }
+  // sleep -> resting heart rate next morning
+  [g, s] = split(days90, k => metricVal("sleep", k) != null ? metricVal("rhr", k) : null, k => metricVal("sleep", k) >= 7);
+  if (g.length >= 4 && s.length >= 4) { const A = avg(g), B = avg(s);
+    H.push({dots:[SL, HR], cat:"Sleep · Heart", text:`Your resting heart rate is ${A < B ? "lower" : "higher"} after nights of 7 hours or more.`,
+      bars:[{l:"After 7 h+ of sleep", v:A, u:"bpm", c:HR}, {l:"After shorter nights", v:B, u:"bpm", c:"#636366"}]}); }
+  // workout days -> next-morning HRV
+  [g, s] = split(days90, k => metricVal("hrv", addDays(k, 1)), k => wdays.has(k));
+  if (g.length >= 4 && s.length >= 4) { const A = avg(g), B = avg(s);
+    H.push({dots:[WK, HR], cat:"Workouts · Recovery", text:`Your HRV the morning after a workout is ${A < B ? "lower" : "higher"} than after a rest day.`,
+      bars:[{l:"After workout days", v:A, u:"ms", c:HR}, {l:"After rest days", v:B, u:"ms", c:"#636366"}]}); }
+  // steps this week vs last week
+  const w1 = series("steps", 7), w0 = series("steps", 7, addDays(t, -7));
+  if (w1.filter(x=>x.v!=null).length >= 4 && w0.filter(x=>x.v!=null).length >= 4) { const A = avg(w1.map(x=>x.v)), B = avg(w0.map(x=>x.v));
+    H.push({dots:[AC], cat:"Steps", text:`You're averaging ${A >= B ? "more" : "fewer"} steps per day this week than last week.`,
+      bars:[{l:"Last 7 days", v:A, u:"steps/day", c:AC}, {l:"The week before", v:B, u:"steps/day", c:"#636366"}]}); }
+  // walking speed vs a year ago
+  const s1 = series("walkSpeed", 30).map(x=>x.v).filter(x=>x!=null), s0 = series("walkSpeed", 30, addDays(t, -365)).map(x=>x.v).filter(x=>x!=null);
+  if (s1.length >= 8 && s0.length >= 8) { const A = avg(s1), B = avg(s0); if (Math.abs(A-B) >= 0.1)
+    H.push({dots:[AC], cat:"Mobility", text:`You're walking ${A > B ? "faster" : "slower"} than you were a year ago.`,
+      bars:[{l:"Last 30 days", v:A, u:"km/h", dp:1, c:AC}, {l:"Same time last year", v:B, u:"km/h", dp:1, c:"#636366"}]}); }
+  // this year vs last year
+  const y = new Date().getFullYear(), ya = [], yb = [];
+  for (const [k, d] of Object.entries(S.days)) { if (d.steps == null) continue; if (k.startsWith(y + "-")) ya.push(d.steps); else if (k.startsWith((y-1) + "-")) yb.push(d.steps); }
+  if (ya.length >= 60 && yb.length >= 60) { const A = avg(ya), B = avg(yb);
+    H.push({dots:[AC], cat:"Steps", text:`So far in ${y}, you're walking ${A >= B ? "more" : "less"} each day than in ${y-1}.`,
+      bars:[{l:String(y), v:A, u:"steps/day", c:AC}, {l:String(y-1), v:B, u:"steps/day", c:"#636366"}]}); }
+  return H;
+}
+function highlightCard(h){
+  const mx = Math.max(...h.bars.map(b => b.v)) || 1;
+  return `<div class="card"><div class="ct" style="justify-content:flex-start"><span class="dots">${h.dots.map(c=>`<i style="background:${c}"></i>`).join("")}</span><span style="color:${h.dots[h.dots.length-1]}">${esc(h.cat)}</span></div>
+    <div style="font-size:17px;font-weight:600;margin:6px 0 2px;line-height:1.3">${esc(h.text)}</div>
+    ${h.bars.map(b => `<div class="hb"><div class="mid" style="color:${b.c === "#636366" ? "var(--label)" : b.c}">${b.fmt ? b.fmt : `${num(b.v, b.dp||0)}<span class="u">${esc(b.u)}</span>`}</div>
+      <div class="track" style="width:${Math.max(4, b.v/mx*100).toFixed(1)}%;background:${b.c}"></div><div class="sub">${esc(b.l)}</div></div>`).join("")}</div>`;
+}
+function vHighlights(){
+  const H = highlights();
+  return navBar("") + `<h1 style="font-size:28px;margin:4px 0 14px" class="h2l">Highlights${infoBtn("highlights")}</h1>` +
+    (H.length ? H.map(highlightCard).join("") : `<div class="card empty">Highlights appear as Biom learns from your data. Most need 1 to 2 weeks of Watch data.</div>`);
+}
+/* Workout in context: share of the day's Move ring, and how you recovered that night */
+function contextSection(w){
+  const k = dkey(new Date(w.start)), night = addDays(k, 1), items = [];
+  const mv = ringsFor(k).move;
+  if (w.activeKcal && mv) { const f = Math.min(1, w.activeKcal / mv);
+    items.push(`<div class="row ctx">${ringsSVG(40, [f], {stroke:6})}<div><div style="font-weight:600;font-size:15px">${Math.round(f*100)}% of that day's Move</div><div class="sub">${num(w.activeKcal)} of ${num(mv)} active kcal</div></div></div>`); }
+  const sl = metricVal("sleep", night);
+  if (sl != null) { const ty = typical("sleep", night);
+    items.push(`<div class="row ctx"><div class="ci" style="background:#5ac8fa26;color:var(--sleep)">${IC.moon}</div><div><div style="font-weight:600;font-size:15px">Slept ${hmPlain(sl*60)} that night</div><div class="sub">${ty.mean ? `Your usual: ${hmPlain(ty.mean*60)}` : "Sleep tracked by your Apple Watch"}</div></div></div>`); }
+  for (const key of ["hrv", "rhr"]) { const v = metricVal(key, night); if (v == null) continue; const ty = typical(key, night), m = METRICS[key];
+    const st = ty.lo == null ? "Typical range not set yet" : v < ty.lo ? "Below your typical range" : v > ty.hi ? "Above your typical range" : "Within your typical range";
+    items.push(`<div class="row ctx"><div class="ci" style="background:#ff375f26;color:var(--heart)">${IC.heart}</div><div><div style="font-weight:600;font-size:15px">${esc(m.short)} next morning: ${fmtPlain(key, v)}</div><div class="sub">${st}</div></div></div>`); }
+  if (night > TODAY() || (sl == null && night === TODAY())) items.push(`<div class="row ctx"><div class="ci" style="background:#5ac8fa26;color:var(--sleep)">${IC.moon}</div><div class="sub" style="font-size:15px">Wear your Watch to bed tonight to see how you recover from this workout.</div></div>`);
+  if (!items.length) return "";
+  return `<h2><span class="h2l">In Context${infoBtn("context")}</span></h2><div class="card">${items.join("")}</div>`;
+}
+
 /* ============================================================ views */
 function render(){
   const top = R.stack[R.stack.length-1];
   let html;
   try {
     if (!top) html = ({summary:vSummary, workouts:vWorkouts, gym:vGym, health:vHealth})[R.tab]();
-    else html = ({workout:vWorkout, metric:vMetric, session:vSession, exercise:vExercise, settings:vSettings, addset:vAddSet, allworkouts:vWorkouts})[top.t](top);
+    else html = ({workout:vWorkout, metric:vMetric, session:vSession, exercise:vExercise, settings:vSettings, addset:vAddSet, allworkouts:vWorkouts, highlights:vHighlights})[top.t](top);
   } catch(e) { console.error(e); html = `<div class="card">Something went wrong: ${esc(e.message)}</div>`; }
   $("#app").innerHTML = html;
   $("#tabbar").innerHTML = `<div class="in">${[["summary","Summary"],["workouts","Workouts"],["gym","Gym"],["health","Health"]].map(([k,n]) =>
@@ -517,7 +706,7 @@ function vSummary(){
   if (!Object.keys(S.days).length && !setsList().length) return h + welcome();
   h += backupBanner();
   const r = ringsFor(t);
-  h += `<h2>Activity</h2><div class="card tap" onclick="go({t:'metric',k:'move'})"><div class="row" style="gap:18px">
+  h += `<h2><span class="h2l">Activity${infoBtn("rings")}</span></h2><div class="card tap" onclick="go({t:'metric',k:'move'})"><div class="row" style="gap:18px">
     ${ringsSVG(124,[r.move/r.moveGoal, r.exercise/r.exerciseGoal, r.stand/r.standGoal])}
     <div class="ringstats">
       <div class="stat"><div class="lbl">Move</div><div class="mid" style="color:var(--move)">${num(r.move)}/${num(r.moveGoal)}<span class="u">kcal</span></div></div>
@@ -534,7 +723,10 @@ function vSummary(){
       <div class="big" style="margin-top:6px">${fmtMetric(k, l.v)}</div><div class="sub">${relDay(l.k)}</div>
       ${m.agg==="sum" ? `<div style="margin-top:10px">${barChart(sp, m.hex, {h:70, spark:true})}</div>` : ""}</div>`;
   }).join("");
-  if (tiles) h += `<h2>Highlights</h2><div class="grid2">${tiles}</div>`;
+  h += vitalsCard();
+  if (tiles) h += `<h2>Pinned</h2><div class="grid2">${tiles}</div>`;
+  const HL = highlights();
+  if (HL.length) h += `<h2><span class="h2l">Highlights${infoBtn("highlights")}</span>${HL.length > 2 ? `<small class="tap" onclick="go({t:'highlights'})">Show All</small>` : ""}</h2>` + HL.slice(0, 2).map(highlightCard).join("");
   // latest workout and gym session
   const w = workoutsSorted()[0];
   if (w) h += `<h2>Workouts <small class="tap" onclick="setTab('workouts')">Show More</small></h2>` + workoutRow(w, true);
@@ -557,7 +749,7 @@ function trendsCard(){
       <div style="flex:1"><div style="font-size:15px;font-weight:600">${esc(m.short||m.n)}</div><div class="sub">7-day average vs previous 4 weeks</div></div>
       <div class="mid" style="color:${m.c};font-size:18px">${fmtMetric(k, recent)}</div></div>`);
   }
-  return rows.length ? `<h2>Trends</h2><div class="card">${rows.join("")}</div>` : "";
+  return rows.length ? `<h2><span class="h2l">Trends${infoBtn("trends")}</span></h2><div class="card">${rows.join("")}</div>` : "";
 }
 function workoutRow(w, card){
   const t = wType(w), main = w.distanceKm ? `${num(w.distanceKm,2)}<span class="u">km</span>` : hm(w.durationMin);
@@ -576,7 +768,7 @@ function vWorkouts(){
   const wk = series("exercise", 7);
   h += `<div class="card"><div class="between"><div><div class="sub">Last 7 days</div><div class="big">${ws.filter(w => (Date.now()-new Date(w.start))/864e5 < 7).length}<span class="u">workouts</span></div></div>
     <div style="text-align:right"><div class="sub">Distance</div><div class="big" style="color:var(--dist)">${num(sum(ws.filter(w => (Date.now()-new Date(w.start))/864e5 < 7).map(w=>w.distanceKm||0)),1)}<span class="u">km</span></div></div></div>
-    <div style="margin-top:10px">${barChart(wk.map(x => ({label:pday(x.k).toLocaleDateString("en-GB",{weekday:"narrow"}), v:x.v})), "#a6ff00", {h:90})}</div><div class="sub">Exercise minutes</div></div>`;
+    <div style="margin-top:10px">${barChart(wk.map(x => ({label:pday(x.k).toLocaleDateString("en-GB",{weekday:"narrow"}), v:x.v})), "#a6ff00", {h:90})}</div><div class="sub">Exercise minutes</div></div>` + loadCard();
   for (const [m, list] of Object.entries(months)) {
     const d = new Date(m + "-01T12:00:00");
     h += `<h2>${d.toLocaleDateString("en-GB",{month:"long", year:"numeric"})}<small style="color:var(--label2)">${num(sum(list.map(w=>w.distanceKm||0)),1)} km</small></h2><div class="card list">${list.map(w => workoutRow(w,false)).join("")}</div>`;
@@ -604,14 +796,15 @@ function vWorkout({id}){
       ${lineChart(w.hr.map(([x,y]) => ({x,y})), "#ff375f", {h:150, xLabels:[{x:0,label:"0:00"},{x:end/2,label:clock(end/2)},{x:end,label:clock(end)}]})}</div>`;
     const z = hrZones(w);
     if (z) { const tot = sum(z.z) || 1;
-      h += `<h2>Heart Rate Zones</h2><div class="card">${z.z.map((s,i) => `<div class="zone"><div><b style="color:${ZONE_C[i]}">Zone ${i+1}</b></div>
+      h += `<h2><span class="h2l">Heart Rate Zones${infoBtn("zones")}</span></h2><div class="card">${z.z.map((s,i) => `<div class="zone"><div><b style="color:${ZONE_C[i]}">Zone ${i+1}</b></div>
         <div class="bar"><i style="width:${(s/tot*100).toFixed(1)}%;background:${ZONE_C[i]}"></i></div><div style="text-align:right;font-family:var(--round);font-weight:600">${clock(s)}</div></div>`).join("")}
         <div class="sub" style="margin-top:6px">Based on max HR ${maxHr()} and resting HR ${restHr()} bpm (heart-rate reserve). Zone 2 = ${z.lim[1]}–${z.lim[2]} bpm.</div></div>`; }
   }
   if (w.splits && w.splits.length) {
-    h += `<h2>Splits</h2><div class="card"><table class="splits"><tr><th>Km</th><th>Pace</th><th>Heart Rate</th></tr>
+    h += `<h2><span class="h2l">Splits${infoBtn("splits")}</span></h2><div class="card"><table class="splits"><tr><th>Km</th><th>Pace</th><th>Heart Rate</th></tr>
       ${w.splits.map(s => `<tr><td style="color:var(--label2)">${s.km}</td><td style="color:var(--dist)">${pace(s.sec)}</td><td style="color:var(--heart)">${s.avgHr ? s.avgHr + " bpm" : "–"}</td></tr>`).join("")}</table></div>`;
   }
+  h += contextSection(w);
   h += `<h2>Workout Type</h2><div class="card"><div class="field"><span>Shown as</span><select onchange="setWType('${esc(id)}', this.value)">
     ${Object.entries(WT).map(([k,v]) => `<option value="${k}" ${k===t?"selected":""}>${v.n}</option>`).join("")}</select></div>
     <div class="sub">Recorded as “${esc(w.rawType||w.type)}” by ${esc(w.source||"Apple Watch")}. Changing it here only affects this dashboard.</div></div>`;
@@ -642,8 +835,10 @@ function vMetric({k}){
   const m = METRICS[k], range = R.range[k] || (m.agg==="sum" ? "W" : "M");
   const b = buckets(k, range), vals = b.map(x=>x.v).filter(v=>v!=null), a = avg(vals);
   const lbl = m.agg==="sum" ? (range==="W"||range==="M" ? "Daily average" : "Average per day") : "Average";
-  let h = navBar("") + `<h1 style="font-size:28px;margin:4px 0 2px">${esc(m.n)}</h1>`;
-  h += `<div class="seg">${Object.keys(RANGES).map(r => `<button class="${r===range?"on":""}" onclick="R.range['${k}']='${r}';render()">${r}</button>`).join("")}</div>`;
+  let h = navBar("") + `<h1 style="font-size:28px;margin:4px 0 2px" class="h2l">${esc(m.n)}${infoBtn(k)}</h1>`;
+  h += `<div class="seg" role="tablist">${Object.keys(RANGES).map(r => `<button role="tab" aria-label="${RANGE_INFO[r].n}" title="${RANGE_INFO[r].n}" class="${r===range?"on":""}" onclick="R.range['${k}']='${r}';render()">${r}</button>`).join("")}</div>`;
+  const isBar = m.agg==="sum" || k==="sleep";
+  h += `<div class="sub rangecap"><b style="color:var(--label)">${RANGE_INFO[range].n}.</b> ${RANGE_INFO[range].d.replace("one bar", isBar ? "one bar" : "one point").replace("Each bar", isBar ? "Each bar" : "Each point")} ${isBar ? "The dashed line is the average. Tap a bar to see its value." : ""} <button class="info" style="width:auto;height:auto;margin:0;font-size:13px;font-weight:600" onclick="info('ranges')">More</button></div>`;
   h += `<div class="card"><div id="mhead"><div class="eyebrow">${lbl}</div><div class="big" style="color:${m.c}">${fmtMetric(k, a)}</div><div class="sub">${esc(b[0]?.title||"")} – ${esc(b[b.length-1]?.title||"")}</div></div>
     <div style="margin-top:10px">${ (m.agg==="sum" || k==="sleep") ? barChart(b, m.hex, {h:190, avgLine:a, onTap:k}) :
       lineChart(b.map((x,i)=>({x:i, y:x.v})), m.hex, {h:190, dots:true, area:false, xLabels: b.map((x,i)=>({x:i,label:x.label})).filter((x,i)=>x.label && i % Math.ceil(b.length/7)===0)}) }</div></div>`;
@@ -653,6 +848,8 @@ function vMetric({k}){
   if (vals.length) h += `<div class="card"><div class="statgrid"><div><div class="k muted">Lowest</div><div class="mid">${fmtMetric(k, Math.min(...vals))}</div></div><div><div class="k muted">Highest</div><div class="mid">${fmtMetric(k, Math.max(...vals))}</div></div></div></div>`;
   if (k === "move") { const t = TODAY(), r = ringsFor(t); h += `<div class="card"><div class="sub">Move goal ${num(r.moveGoal)} kcal · Exercise ${num(r.exerciseGoal)} min · Stand ${num(r.standGoal)} hrs. Goals come from your Apple Watch.</div></div>`; }
   if (k === "sleep") { const l = latest("sleep"); if (l) { const sl = S.days[l.k].sleep; h += sleepCard(sl, l.k); } }
+  const ty = typical(k); if (ty.lo != null && m.agg === "avg") h += `<div class="card"><div class="between"><span class="muted">Your typical range</span><span class="mid" style="font-size:18px">${fmtPlain(k, ty.lo)} – ${fmtPlain(k, ty.hi)}</span></div><div class="sub">Based on your last 4 weeks</div></div>`;
+  if (ABOUT[k]) h += `<h2>About ${esc(m.short || m.n)}</h2><div class="card"><div style="font-size:15px;line-height:1.5;color:rgba(235,235,245,.85)">${ABOUT[k]}</div></div>`;
   window._mb = {k, b, lbl};
   return h;
 }
@@ -681,7 +878,7 @@ function vGym(){
   const weeks = []; for (let i = 7; i >= 0; i--) { const ws = addDays(monday, -7*i), we = addDays(ws, 6);
     const sets = setsList().filter(s => s.date >= ws && s.date <= we); weeks.push({label: pday(ws).toLocaleDateString("en-GB",{day:"numeric",month:"numeric"}), v: sets.length, sets}); }
   const thisWeek = weeks[weeks.length-1].sets;
-  h += `<h2>This Week</h2><div class="card"><div class="statgrid">
+  h += `<h2><span class="h2l">This Week${infoBtn("gymvol")}</span></h2><div class="card"><div class="statgrid">
     <div><div class="k muted">Sessions</div><div class="big" style="color:var(--gym)">${new Set(thisWeek.map(s=>s.date)).size}</div></div>
     <div><div class="k muted">Sets</div><div class="big" style="color:var(--gym)">${thisWeek.length}</div></div>
     <div><div class="k muted">Volume</div><div class="mid">${num(sum(thisWeek.map(s=>TIMED.has(s.ex)?0:s.reps*(s.kg||0))))}<span class="u">kg</span></div></div>
@@ -711,6 +908,8 @@ function vSession({date}){
   h += `<div class="card"><div class="statgrid"><div><div class="k">Sets</div><div class="mid" style="color:var(--gym)">${ss.sets.length}</div></div>
     <div><div class="k">Exercises</div><div class="mid" style="color:var(--gym)">${ss.ex.length}</div></div>
     <div><div class="k">Volume</div><div class="mid">${num(ss.vol)}<span class="u">kg</span></div></div><div><div class="k">Reps</div><div class="mid">${num(ss.reps)}</div></div>
+    ${metricVal("sleep", date) != null ? `<div><div class="k">Sleep the Night Before</div><div class="mid" style="color:var(--sleep)">${hm(metricVal("sleep", date)*60)}</div></div>` : ""}
+    ${metricVal("hrv", date) != null ? `<div><div class="k">HRV That Morning</div><div class="mid" style="color:var(--heart)">${num(metricVal("hrv", date))}<span class="u">ms</span></div></div>` : ""}
     ${ss.workout ? `<div><div class="k">Workout Time</div><div class="mid" style="color:var(--time)">${clock((ss.workout.durationMin||0)*60)}</div></div><div><div class="k">Avg. Heart Rate</div><div class="mid" style="color:var(--heart)">${num(ss.workout.avgHr)}<span class="u">bpm</span></div></div>` : ""}</div>
     ${ss.workout ? `<div class="sub tap" style="margin-top:10px;color:var(--blue)" onclick="go({t:'workout',id:'${esc(ss.workout.id)}'})">Open Watch workout ›</div>` : ""}</div>`;
   for (const e of ss.ex) {
@@ -770,6 +969,7 @@ function vHealth(){
   let h = topBar("Recovery and vitals", "Health");
   if (!Object.keys(S.days).length) return h + welcome();
   const ls = latest("sleep");
+  h += vitalsCard();
   h += `<h2>Sleep</h2>` + (ls ? sleepCard(S.days[ls.k].sleep, ls.k) + `<div class="card tap" onclick="go({t:'metric',k:'sleep'})"><div class="ct"><span style="color:var(--sleep)">Last 14 nights</span><span class="chev">›</span></div>${barChart(series("sleep",14).map(x=>({label:pday(x.k).toLocaleDateString("en-GB",{weekday:"narrow"}),v:x.v})), "#5ac8fa", {h:110, goal:8})}</div>`
     : `<div class="card empty">Wear your Apple Watch to bed with a sleep schedule set up to see your sleep here.</div>`);
   h += `<h2>Heart</h2>` + metricRow("rhr") + metricRow("hrv") + metricRow("walkHr") + (metricRow("vo2") || `<div class="card"><div class="ct" style="color:var(--heart)">Cardio Fitness (VO₂ max)</div><div class="sub" style="margin-top:4px">Your Watch estimates this after outdoor walks or runs with GPS. It usually appears within a few days.</div></div>`);
