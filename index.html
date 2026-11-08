@@ -90,7 +90,7 @@ table.splits td{padding:8px 0;border-top:.5px solid var(--sep);font-family:var(-
 .setrow{display:flex;justify-content:space-between;padding:7px 0;border-top:.5px solid var(--sep);font-size:15px}
 .setrow .del{color:var(--heart);font-size:13px;margin-left:12px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--safe-b) + 84px);background:rgba(44,44,46,.96);
-  padding:10px 16px;border-radius:14px;font-size:15px;z-index:20;max-width:90vw;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+  padding:10px 16px;border-radius:14px;font-size:15px;z-index:20;width:max-content;max-width:min(90vw,560px);text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.5)}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--label2);margin-top:8px}
 .legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:0}
 .week{display:flex;justify-content:space-between;margin-top:12px}
@@ -145,12 +145,13 @@ h2 .info{margin-left:8px}
    Biom: a personal health and training dashboard.
    All data lives on this device (IndexedDB). Nothing is sent anywhere.
    ============================================================ */
-const APP_VERSION = "1.2.1";
+const APP_VERSION = "1.2.2";
 /* Versions: MAJOR.MINOR.PATCH
    MAJOR = big redesign or a change in how data is stored (may need a re-import)
    MINOR = new screens or features
    PATCH = fixes and small visual tweaks */
 const CHANGELOG = [
+  {v:"1.2.2", d:"8 Nov 2026", items:["Check for Updates in Settings › Software Update and in What's New.","Reload Biom from Settings if a screen looks out of date."]},
   {v:"1.2.1", d:"8 Nov 2026", items:["Clearer Gym screen when no sets are in Biom yet, with a button to import your Watch gym log."]},
   {v:"1.2.0", d:"8 Nov 2026", items:["Biom checks for a new version each time you open it and offers a one-tap update, including from the Home Screen."]},
   {v:"1.1.2", d:"8 Nov 2026", items:["Version number on every screen. Tap it to see what's new."]},
@@ -547,7 +548,7 @@ const RANGE_INFO = {
   All:{n:"All Time", d:"Every year since your data began. Each bar is one year, showing your daily average that year."},
 };
 const INFO = {
-  whatsnew:{t:"What's New", b:`${CHANGELOG.map((c,i) => `<p style="margin-top:${i?18:6}px"><b style="color:#fff;font-size:17px">Version ${c.v}</b>${i===0?' <span class="pill" style="margin-left:6px;color:#30d158;background:#30d15822">Current</span>':""}<br><span style="color:var(--label2);font-size:13px">${c.d}</span></p><ul style="margin:6px 0 0;padding-left:20px">${c.items.map(x=>`<li style="margin:4px 0">${x}</li>`).join("")}</ul>`).join("")}<p style="margin-top:22px;color:var(--label2);font-size:13px">Numbering: the first number changes for a big redesign, the second for new features, the third for fixes and small tweaks.</p>`},
+  whatsnew:{t:"What's New", b:`<button class="btn" style="margin:4px 0 10px;color:var(--blue)" onclick="checkUpdate(true)">Check for Updates</button>${CHANGELOG.map((c,i) => `<p style="margin-top:${i?18:6}px"><b style="color:#fff;font-size:17px">Version ${c.v}</b>${i===0?' <span class="pill" style="margin-left:6px;color:#30d158;background:#30d15822">Current</span>':""}<br><span style="color:var(--label2);font-size:13px">${c.d}</span></p><ul style="margin:6px 0 0;padding-left:20px">${c.items.map(x=>`<li style="margin:4px 0">${x}</li>`).join("")}</ul>`).join("")}<p style="margin-top:22px;color:var(--label2);font-size:13px">Numbering: the first number changes for a big redesign, the second for new features, the third for fixes and small tweaks.</p>`},
   ranges:{t:"Chart Ranges", b:`<dl>${Object.entries(RANGE_INFO).map(([k,v])=>`<dt>${k} · ${v.n}</dt><dd>${v.d}</dd>`).join("")}</dl><p>The dashed white line is the average for the whole period. Tap any bar to see its exact value.</p>`},
   rings:{t:"Activity Rings", b:`<dl><dt style="color:var(--move)">Move</dt><dd>Active calories burned by moving.</dd><dt style="color:var(--exercise)">Exercise</dt><dd>Minutes of activity at the level of a brisk walk or more.</dd><dt style="color:var(--stand)">Stand</dt><dd>Hours in which you stood and moved for at least one minute.</dd></dl><p>Goals come from your Apple Watch. The small rings show your last 7 days.</p>`},
   vitals:{t:"Overnight Vitals", b:`<p>Compares last night's resting heart rate, heart rate variability, breathing rate and sleep with <b>your own typical range</b>: the grey band, based on your previous 4 weeks. The dot is last night's value.</p><p>One value outside its range is common and rarely meaningful. Several at once can mean your body is under strain: illness starting, stress, alcohol, a late meal or a hard training day.</p><p>Biom needs 7 nights of data before it can set a typical range. This is not a medical device.</p>`},
@@ -1025,6 +1026,11 @@ function vSettings(){
     <button class="btn" onclick="pasteImport()">Paste from clipboard</button>
     <button class="btn" onclick="backup()">Save backup file</button>
     <div class="sub" style="margin-top:8px">Last backup: ${S.meta.lastBackup ? new Date(S.meta.lastBackup).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "never"}. Save backups to iCloud Drive › Sport › Dashboard › Backups. To restore, import a backup file.</div></div>
+  <h2>Software Update</h2><div class="card">
+    <div class="between"><span>Biom</span><span class="muted">Version ${APP_VERSION}</span></div>
+    <button class="btn" style="color:var(--blue)" onclick="checkUpdate(true)">Check for Updates</button>
+    <button class="btn" onclick="reloadApp()">Reload Biom</button>
+    <div class="sub" style="margin-top:8px">Biom also checks automatically each time you open it. Updates never touch your data.</div></div>
   <h2>About</h2><div class="card"><div class="row" style="margin-bottom:10px"><img src="${LOGO}" alt="" width="34"><div><div style="font-weight:700">Biom</div><div class="sub">Version ${APP_VERSION} · <button style="color:var(--blue);font-size:13px" onclick="info('whatsnew')">What's New</button></div></div></div><div class="sub"> Your data never leaves this device: there is no server and no account. Not a medical device.</div>
     <button class="btn danger" onclick="wipe()">Delete all data on this device</button></div>`;
 }
@@ -1036,13 +1042,16 @@ async function wipe(){ if (!confirm("Delete all data stored in Biom on this devi
    to the foreground (a Home Screen app is usually resumed, not reloaded), bypassing every cache. */
 function newer(a, b){ const x = a.split(".").map(Number), y = b.split(".").map(Number); for (let i = 0; i < 3; i++) { if ((x[i]||0) !== (y[i]||0)) return (x[i]||0) > (y[i]||0); } return false; }
 let lastCheck = 0, dismissed = null;
-async function checkUpdate(){
-  if (PREVIEW || location.protocol === "file:" || Date.now() - lastCheck < 60e3) return; lastCheck = Date.now();
+async function checkUpdate(manual=false){
+  if (PREVIEW) { if (manual) toast("Updates are checked in the real app, not in this preview."); return; }
+  if (location.protocol === "file:" || (!manual && Date.now() - lastCheck < 60e3)) return; lastCheck = Date.now();
+  if (manual) toast("Checking for updates…", 1500);
   try {
     const r = await fetch("version.json?t=" + Date.now(), {cache:"no-store"}); if (!r.ok) return;
     const {version, notes} = await r.json();
-    if (version && newer(version, APP_VERSION) && dismissed !== version) showUpdate(version, notes);
-  } catch(e) { /* offline: try again next time */ }
+    if (version && newer(version, APP_VERSION) && (manual || dismissed !== version)) { document.querySelector(".sheet-bg")?.remove(); showUpdate(version, notes); }
+    else if (manual) toast(`Biom is up to date (v${APP_VERSION})`);
+  } catch(e) { if (manual) toast("Couldn't check for updates. Check your internet connection and try again."); }
 }
 function showUpdate(v, notes){
   document.querySelector(".update")?.remove();
@@ -1052,6 +1061,7 @@ function showUpdate(v, notes){
   el.querySelector(".x").onclick = () => { dismissed = v; el.remove(); };
   document.body.appendChild(el);
 }
+function reloadApp(){ location.replace(location.pathname + "?r=" + Date.now()); }
 function applyUpdate(v){ toast("Updating…", 1500); location.replace(location.pathname + "?v=" + encodeURIComponent(v)); }
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkUpdate(); });
 window.addEventListener("pageshow", e => { if (e.persisted) checkUpdate(); });
