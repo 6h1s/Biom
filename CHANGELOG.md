@@ -5,6 +5,10 @@ Numbering is MAJOR.MINOR.PATCH:
 - **MINOR**: new screens or features.
 - **PATCH**: fixes and small visual tweaks.
 
+## 1.3.0 (8 Nov 2026)
+- Profile name at the top of Settings. Tap Edit to change it.
+- Simpler Settings: Profile and Data sections removed.
+
 ## 1.2.2 (8 Nov 2026)
 - Check for Updates in Settings › Software Update and in What's New.
 - Reload Biom from Settings if a screen looks out of date.

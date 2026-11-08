@@ -145,12 +145,13 @@ h2 .info{margin-left:8px}
    Biom: a personal health and training dashboard.
    All data lives on this device (IndexedDB). Nothing is sent anywhere.
    ============================================================ */
-const APP_VERSION = "1.2.2";
+const APP_VERSION = "1.3.0";
 /* Versions: MAJOR.MINOR.PATCH
    MAJOR = big redesign or a change in how data is stored (may need a re-import)
    MINOR = new screens or features
    PATCH = fixes and small visual tweaks */
 const CHANGELOG = [
+  {v:"1.3.0", d:"8 Nov 2026", items:["Profile name at the top of Settings. Tap Edit to change it.","Simpler Settings: Profile and Data sections removed."]},
   {v:"1.2.2", d:"8 Nov 2026", items:["Check for Updates in Settings › Software Update and in What's New.","Reload Biom from Settings if a screen looks out of date."]},
   {v:"1.2.1", d:"8 Nov 2026", items:["Clearer Gym screen when no sets are in Biom yet, with a button to import your Watch gym log."]},
   {v:"1.2.0", d:"8 Nov 2026", items:["Biom checks for a new version each time you open it and offers a one-tap update, including from the Home Screen."]},
@@ -555,7 +556,7 @@ const INFO = {
   highlights:{t:"Highlights", b:`<p>Highlights compare your recent data with your own past, and cross different kinds of data, like sleep and activity, to show patterns. The coloured dots show which kinds of data are combined.</p><p>A highlight only appears when there is enough data to compare fairly, for example at least 4 nights in each group. They show patterns, not causes.</p>`},
   trends:{t:"Trends", b:`<p>Compares your average over the last 7 days with your average over the 4 weeks before.</p><dl><dt>Arrow in colour</dt><dd>Going in a good direction.</dd><dt style="color:#ff9f0a">Orange arrow</dt><dd>Going down compared with your usual.</dd><dt style="color:#8e8e93">Grey arrow</dt><dd>About the same (within 3%).</dd></dl>`},
   load:{t:"Training Load", b:`<p>Compares the effort of your workouts over the last 7 days with your average over the last 28 days.</p><p>Each workout's effort combines its <b>duration</b> with <b>how hard your heart worked</b>: your average heart rate compared with your resting and maximum heart rate. A long easy walk and a short hard run can count about the same.</p><dl><dt style="color:#30d158">Steady</dt><dd>You're training about as much as usual.</dd><dt style="color:#ff9f0a">Above</dt><dd>A heavier week than usual. Good for building fitness, but plan some rest.</dd><dt style="color:#ff375f">Well Above</dt><dd>Much more than usual. Keeping this up for long raises the risk of injury.</dd><dt style="color:#5ac8fa">Below</dt><dd>Lighter than usual, like a rest or recovery week.</dd></dl><p>Needs about 3 weeks of workouts before it can compare.</p>`},
-  zones:{t:"Heart Rate Zones", b:`<p>Zones are based on your <b>heart-rate reserve</b>: the gap between your resting and maximum heart rate.</p><dl><dt style="color:${ZONE_C_INFO[0]}">Zone 1 · under 60%</dt><dd>Very easy. Warm-up, recovery.</dd><dt style="color:${ZONE_C_INFO[1]}">Zone 2 · 60–70%</dt><dd>Easy, you can hold a conversation. Builds your aerobic base.</dd><dt style="color:${ZONE_C_INFO[2]}">Zone 3 · 70–80%</dt><dd>Moderate, breathing harder. Improves endurance.</dd><dt style="color:${ZONE_C_INFO[3]}">Zone 4 · 80–90%</dt><dd>Hard, a few words at a time. Raises your threshold.</dd><dt style="color:${ZONE_C_INFO[4]}">Zone 5 · over 90%</dt><dd>Maximal effort, only for short bursts.</dd></dl><p>You can set your own maximum and resting heart rate in Settings.</p>`},
+  zones:{t:"Heart Rate Zones", b:`<p>Zones are based on your <b>heart-rate reserve</b>: the gap between your resting and maximum heart rate.</p><dl><dt style="color:${ZONE_C_INFO[0]}">Zone 1 · under 60%</dt><dd>Very easy. Warm-up, recovery.</dd><dt style="color:${ZONE_C_INFO[1]}">Zone 2 · 60–70%</dt><dd>Easy, you can hold a conversation. Builds your aerobic base.</dd><dt style="color:${ZONE_C_INFO[2]}">Zone 3 · 70–80%</dt><dd>Moderate, breathing harder. Improves endurance.</dd><dt style="color:${ZONE_C_INFO[3]}">Zone 4 · 80–90%</dt><dd>Hard, a few words at a time. Raises your threshold.</dd><dt style="color:${ZONE_C_INFO[4]}">Zone 5 · over 90%</dt><dd>Maximal effort, only for short bursts.</dd></dl>`},
   splits:{t:"Splits", b:`<p>Your time for each full kilometre. Pace is shown as minutes'seconds" per kilometre, so a lower number means faster.</p>`},
   context:{t:"In Context", b:`<p>Shows what this workout meant for your day, and how your body responded the following night: sleep, heart rate variability and resting heart rate, each compared with your typical range.</p>`},
   gymvol:{t:"Sets and Volume", b:`<p><b>Volume</b> is weight × reps, added up for all sets. Bodyweight exercises (0 kg) and timed holds don't add volume, but count as sets.</p><p>The best set uses an estimated <b>one-rep max</b> (the heaviest weight you could lift once), so 10 × 40 kg and 5 × 50 kg can be compared.</p>`},
@@ -1009,23 +1010,11 @@ function vHealth(){
 function vSettings(){
   const p = S.profile, st = S.settings, nDays = Object.keys(S.days).length;
   const sizeKB = Math.round(JSON.stringify(S).length / 1024);
-  return navBar("Settings") + `
+  return navBar("Settings") + profileHeader() + `
   <h2>Sync</h2><div class="card">
     <div class="between"><span>Last sync</span><span class="muted">${S.meta.lastSync ? new Date(S.meta.lastSync).toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "Never"}</span></div>
     <button class="btn primary" onclick="syncNow()">Sync now</button>
     <div class="sub" style="margin-top:8px">Runs the “${SHORTCUT_NAME}” shortcut on your iPhone, which reads Apple Health and your gym log and brings the new data back here.</div></div>
-  <h2>Profile</h2><div class="card">
-    <div class="field"><span>Date of birth</span><input type="date" value="${esc(p.dob||"")}" onchange="S.profile.dob=this.value;save();render()"></div>
-    <div class="field"><span>Height (cm)</span><input type="number" inputmode="decimal" value="${esc(p.heightCm||"")}" onchange="S.profile.heightCm=+this.value;save()"></div>
-    <div class="field"><span>Max heart rate</span><input type="number" inputmode="numeric" placeholder="${maxHr()} (estimated)" value="${esc(st.maxHr||"")}" onchange="S.settings.maxHr=+this.value||undefined;save();render()"></div>
-    <div class="field"><span>Resting heart rate</span><input type="number" inputmode="numeric" placeholder="${restHr()} (from Watch)" value="${esc(st.restHr||"")}" onchange="S.settings.restHr=+this.value||undefined;save();render()"></div>
-    <div class="sub">Max and resting heart rate set your heart-rate zones. Leave them empty to use estimates.</div></div>
-  <h2>Data</h2><div class="card">
-    <div class="between"><span>Stored on this device</span><span class="muted">${num(nDays)} days · ${Object.keys(S.workouts).length} workouts · ${setsList().length} sets · ${sizeKB} KB</span></div>
-    <button class="btn" onclick="$('#file').click()">Import file…</button>
-    <button class="btn" onclick="pasteImport()">Paste from clipboard</button>
-    <button class="btn" onclick="backup()">Save backup file</button>
-    <div class="sub" style="margin-top:8px">Last backup: ${S.meta.lastBackup ? new Date(S.meta.lastBackup).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "never"}. Save backups to iCloud Drive › Sport › Dashboard › Backups. To restore, import a backup file.</div></div>
   <h2>Software Update</h2><div class="card">
     <div class="between"><span>Biom</span><span class="muted">Version ${APP_VERSION}</span></div>
     <button class="btn" style="color:var(--blue)" onclick="checkUpdate(true)">Check for Updates</button>
@@ -1033,6 +1022,23 @@ function vSettings(){
     <div class="sub" style="margin-top:8px">Biom also checks automatically each time you open it. Updates never touch your data.</div></div>
   <h2>About</h2><div class="card"><div class="row" style="margin-bottom:10px"><img src="${LOGO}" alt="" width="34"><div><div style="font-weight:700">Biom</div><div class="sub">Version ${APP_VERSION} · <button style="color:var(--blue);font-size:13px" onclick="info('whatsnew')">What's New</button></div></div></div><div class="sub"> Your data never leaves this device: there is no server and no account. Not a medical device.</div>
     <button class="btn danger" onclick="wipe()">Delete all data on this device</button></div>`;
+}
+/* Profile header (Apple ID style). Later: one row per linked account. */
+function profileHeader(){
+  const n = (S.profile.name || "").trim();
+  return `<div class="card" style="margin-top:10px;display:flex;align-items:center;gap:14px;padding:16px">
+    <div aria-hidden="true" style="width:62px;height:62px;border-radius:50%;flex:none;background:linear-gradient(180deg,#a1a1a6,#6e6e73);display:grid;place-items:center;font-family:var(--round);font-weight:600;font-size:27px;color:#fff">${esc((n[0]||"?").toUpperCase())}</div>
+    <div id="pname" style="flex:1;min-width:0">${n ? `<div style="font-size:22px;font-weight:600">${esc(n)}</div>` : `<div style="font-size:20px;font-weight:600;color:var(--blue)">Add your name</div>`}<div class="sub">Profile on this device</div></div>
+    <button style="color:var(--blue);font-size:17px" onclick="editName()">Edit</button></div>`;
+}
+function editName(){
+  const box = $("#pname"); if (!box || box.querySelector("input")) return;
+  box.innerHTML = `<input id="pname-in" type="text" maxlength="40" autocomplete="given-name" value="${esc(S.profile.name||"")}" placeholder="Your name"
+    style="width:100%;font-size:22px;font-weight:600;background:var(--card2);border:0;border-radius:8px;padding:6px 10px;color:#fff;outline:none"><div class="sub" style="margin-top:4px">Press Return to save</div>`;
+  const inp = $("#pname-in"); inp.focus(); inp.select();
+  const done = () => { S.profile.name = inp.value.trim(); save(); render(); };
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") done(); if (e.key === "Escape") render(); });
+  inp.addEventListener("blur", done);
 }
 async function pasteImport(){ try { const t = await navigator.clipboard.readText(); toast(importText(t, "Pasted")); render(); } catch(e) { toast("Couldn't read the clipboard: " + esc(e.message)); } }
 async function wipe(){ if (!confirm("Delete all data stored in Biom on this device? Make a backup first if you want to keep it.")) return; S = blankState(); await dbSet("state", S); R.stack = []; render(); toast("All data deleted"); }
