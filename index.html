@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="apple-mobile-web-app-title" content="Pulse">
+<meta name="apple-mobile-web-app-title" content="Biom">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="icon" href="icon.png">
-<title>Pulse</title>
+<title>Biom</title>
 <style>
 :root{
   --bg:#000; --card:#1c1c1e; --card2:#2c2c2e; --sep:rgba(84,84,88,.6);
@@ -106,7 +106,7 @@ table.splits td{padding:8px 0;border-top:.5px solid var(--sep);font-family:var(-
 <script>
 "use strict";
 /* ============================================================
-   Pulse: a personal health and training dashboard.
+   Biom: a personal health and training dashboard.
    All data lives on this device (IndexedDB). Nothing is sent anywhere.
    ============================================================ */
 const APP_VERSION = "1.0.0";
@@ -329,7 +329,7 @@ function handleHash(){
 function backup(){
   const data = Object.assign({format:"health-dashboard", version:1, kind:"backup", exported:new Date().toISOString(), app:APP_VERSION}, S);
   const blob = new Blob([JSON.stringify(data)], {type:"application/json"});
-  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `pulse-backup-${TODAY()}.json`;
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `biom-backup-${TODAY()}.json`;
   document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   S.meta.lastBackup = new Date().toISOString(); save(); render();
 }
@@ -494,7 +494,7 @@ function render(){
 function welcome(){
   return `<div class="card" style="padding:20px">
     <div style="display:flex;justify-content:center;margin:6px 0 14px">${ringsSVG(120,[.75,.55,.35])}</div>
-    <div class="mid" style="text-align:center;margin-bottom:6px">Welcome to Pulse</div>
+    <div class="mid" style="text-align:center;margin-bottom:6px">Welcome to Biom</div>
     <p class="sub" style="text-align:center;font-size:15px;margin:0 0 14px">Your health and training history, stored only on this device.
     Import your baseline file (<b>baseline.json</b> from iCloud Drive › Sport › Dashboard) to get started.</p>
     <button class="btn primary" onclick="$('#file').click()">Import file</button></div>`;
@@ -797,11 +797,11 @@ function vSettings(){
     <button class="btn" onclick="pasteImport()">Paste from clipboard</button>
     <button class="btn" onclick="backup()">Save backup file</button>
     <div class="sub" style="margin-top:8px">Last backup: ${S.meta.lastBackup ? new Date(S.meta.lastBackup).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "never"}. Save backups to iCloud Drive › Sport › Dashboard › Backups. To restore, import a backup file.</div></div>
-  <h2>About</h2><div class="card"><div class="sub">Pulse ${APP_VERSION}. Your data never leaves this device: there is no server and no account. Not a medical device.</div>
+  <h2>About</h2><div class="card"><div class="sub">Biom ${APP_VERSION}. Your data never leaves this device: there is no server and no account. Not a medical device.</div>
     <button class="btn danger" onclick="wipe()">Delete all data on this device</button></div>`;
 }
 async function pasteImport(){ try { const t = await navigator.clipboard.readText(); toast(importText(t, "Pasted")); render(); } catch(e) { toast("Couldn't read the clipboard: " + esc(e.message)); } }
-async function wipe(){ if (!confirm("Delete all data stored in Pulse on this device? Make a backup first if you want to keep it.")) return; S = blankState(); await dbSet("state", S); R.stack = []; render(); toast("All data deleted"); }
+async function wipe(){ if (!confirm("Delete all data stored in Biom on this device? Make a backup first if you want to keep it.")) return; S = blankState(); await dbSet("state", S); R.stack = []; render(); toast("All data deleted"); }
 
 /* ============================================================ start */
 $("#file").addEventListener("change", e => { handleFiles([...e.target.files]); e.target.value = ""; });
